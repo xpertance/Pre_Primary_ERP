@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import {
     User, Phone, Mail, Calendar, MapPin,
     DollarSign, AlertCircle, ArrowLeft,
-    Download, Plus, CreditCard, Edit2, Trash2
+    Download, Plus, CreditCard, Edit2, Trash2, UserCheck
 } from "lucide-react";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
@@ -39,6 +39,12 @@ interface Student {
         _id: string;
         name: string;
         section: string;
+        teachers?: Array<{
+            _id: string;
+            name: string;
+            email?: string;
+            phone?: string;
+        }>;
     };
     dob?: string;
     gender?: string;
@@ -379,10 +385,10 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
     return (
         <div className="p-6 bg-gray-50 min-h-screen">
             {/* Header / Nav */}
-            <div className="flex items-center gap-4 mb-8">
+            <div className="flex items-center gap-4 mb-6">
                 <button
                     onClick={() => router.back()}
-                    className="p-2 hover:bg-white rounded-full transition-colors border border-transparent hover:border-gray-200"
+                    className="p-2 hover:bg-white rounded-full transition-colors border border-transparent hover:border-gray-200 shadow-sm"
                 >
                     <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
@@ -392,126 +398,148 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
                 </div>
             </div>
 
-            {/* Profile Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                {/* ID Card */}
-                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <div className="flex flex-col items-center text-center">
-                        <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-lg">
-                            {student.firstName.charAt(0)}{student.lastName?.charAt(0) || ""}
-                        </div>
-                        <h2 className="text-xl font-bold text-gray-800">
+            {/* ── Profile Banner ── */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-2xl shadow-sm mb-6 overflow-hidden">
+                {/* Name + badges row inside the gradient */}
+                <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div>
+                        <h2 className="text-2xl font-bold text-white leading-tight">
                             {student.firstName} {student.lastName || ""}
                         </h2>
-                        <span className="inline-block mt-2 px-3 py-1 bg-blue-50 text-blue-700 text-sm font-medium rounded-full">
-                            {student.classId?.name} - {student.classId?.section}
-                        </span>
-
-                        <div className="w-full mt-6 space-y-3 text-left">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500">Admission No</span>
-                                <span className="font-medium text-gray-800">{student.admissionNo || "N/A"}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500">DOB</span>
-                                <span className="font-medium text-gray-800">
-                                    {student.dob ? new Date(student.dob).toLocaleDateString() : "N/A"}
+                        <div className="flex flex-wrap items-center gap-2 mt-2">
+                            {student.classId && (
+                                <span className="px-2.5 py-0.5 bg-white/20 text-white text-xs font-semibold rounded-full border border-white/30">
+                                    {student.classId.name} — Sec {student.classId.section}
                                 </span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-500">Email</span>
-                                <span className="font-medium text-gray-800 truncate max-w-[150px]" title={student.email}>
-                                    {student.email || "N/A"}
+                            )}
+                            {student.admissionNo && (
+                                <span className="px-2.5 py-0.5 bg-white/20 text-white text-xs font-medium rounded-full border border-white/30">
+                                    Adm #{student.admissionNo}
                                 </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Fee Status Cards */}
-                <div className="md:col-span-2 space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-md">
-                            <p className="text-blue-100 text-sm font-medium mb-1">Total Fees Due</p>
-                            <h3 className="text-2xl font-bold">{formatCurrency(studentData.totalDue)}</h3>
-                        </div>
-                        <div className="bg-white border border-green-200 rounded-xl p-5 shadow-sm">
-                            <p className="text-green-600 text-sm font-medium mb-1">Total Paid</p>
-                            <h3 className="text-2xl font-bold text-green-700">{formatCurrency(studentData.totalPaid)}</h3>
-                        </div>
-                        <div className="bg-white border border-red-200 rounded-xl p-5 shadow-sm">
-                            <p className="text-red-600 text-sm font-medium mb-1">Total Pending</p>
-                            <h3 className="text-2xl font-bold text-red-700">{formatCurrency(studentData.totalPending)}</h3>
-                        </div>
-                    </div>
-
-                    {/* Parents & Medical Info Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Parents */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-full">
-                            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <User className="w-4 h-4 text-blue-500" />
-                                Parent Details
-                            </h3>
-                            {student.parents && student.parents.length > 0 ? (
-                                <div className="space-y-4">
-                                    {student.parents.map((parent, idx) => (
-                                        <div key={idx} className="flex justify-between items-start border-b border-gray-100 last:border-0 pb-3 last:pb-0">
-                                            <div>
-                                                <p className="font-medium text-gray-800">{parent.name}</p>
-                                                <p className="text-xs text-gray-500">{parent.relation}</p>
-                                            </div>
-                                            <div className="text-right text-sm">
-                                                {parent.phone && <p className="text-gray-600">{parent.phone}</p>}
-                                                {parent.email && <p className="text-gray-500 text-xs">{parent.email}</p>}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-gray-400 text-sm">No parent details available</p>
                             )}
                         </div>
-
-                        {/* Medical */}
-                        <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm h-full">
-                            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <AlertCircle className="w-4 h-4 text-red-500" />
-                                Medical Info
-                            </h3>
-                            {student.medical ? (
-                                <div className="space-y-3">
-                                    {student.medical.allergies && student.medical.allergies.length > 0 && (
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Allergies</p>
-                                            <div className="flex flex-wrap gap-2">
-                                                {student.medical.allergies.map((allergy, i) => (
-                                                    <span key={i} className="px-2 py-1 bg-red-50 text-red-600 rounded text-xs font-medium border border-red-100">
-                                                        {allergy}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {student.medical.notes ? (
-                                        <div>
-                                            <p className="text-xs text-gray-500 mb-1">Notes</p>
-                                            <p className="text-sm text-gray-700">{student.medical.notes}</p>
-                                        </div>
-                                    ) : !student.medical.allergies?.length && (
-                                        <p className="text-gray-400 text-sm">No medical notes available</p>
-                                    )}
-                                </div>
-                            ) : (
-                                <p className="text-gray-400 text-sm">No medical information</p>
-                            )}
-                        </div>
+                    </div>
+                    {/* Info pills — readable on right with contrast background */}
+                    <div className="flex flex-wrap gap-2">
+                        {student.dob && (
+                            <div className="flex items-center gap-1.5 bg-black/25 text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                                <Calendar className="w-3.5 h-3.5 text-white" />
+                                <span>{new Date(student.dob).toLocaleDateString()}</span>
+                            </div>
+                        )}
+                        {student.gender && (
+                            <div className="flex items-center gap-1.5 bg-black/25 text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                                <User className="w-3.5 h-3.5 text-white" />
+                                <span className="capitalize">{student.gender}</span>
+                            </div>
+                        )}
+                        {student.email && (
+                            <div className="flex items-center gap-1.5 bg-black/25 text-white text-xs font-medium px-3 py-1.5 rounded-full">
+                                <Mail className="w-3.5 h-3.5 text-white" />
+                                <span className="truncate max-w-[200px]" title={student.email}>{student.email}</span>
+                            </div>
+                        )}
+                        {/* Class Teacher Display */}
+                        {student.classId?.teachers && student.classId.teachers.length > 0 && (
+                            <div className="flex items-center gap-1.5 bg-white/20 text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/30 backdrop-blur-sm">
+                                <UserCheck className="w-3.5 h-3.5 text-white" />
+                                <span>Class Teacher: {student.classId.teachers.map(t => t.name).join(", ")}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
+            {/* ── Fee Stats Row ── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-md">
+                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wide mb-1">Total Fees Due</p>
+                    <h3 className="text-3xl font-bold">{formatCurrency(studentData.totalDue)}</h3>
+                    <p className="text-blue-200 text-xs mt-2">Across all transactions</p>
+                </div>
+                <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl p-5 text-white shadow-md">
+                    <p className="text-emerald-100 text-xs font-medium uppercase tracking-wide mb-1">Total Paid</p>
+                    <h3 className="text-3xl font-bold">{formatCurrency(studentData.totalPaid)}</h3>
+                    <p className="text-emerald-200 text-xs mt-2">
+                        {studentData.totalDue > 0 ? Math.round((studentData.totalPaid / studentData.totalDue) * 100) : 0}% of total
+                    </p>
+                </div>
+                <div className="bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl p-5 text-white shadow-md">
+                    <p className="text-rose-100 text-xs font-medium uppercase tracking-wide mb-1">Total Pending</p>
+                    <h3 className="text-3xl font-bold">{formatCurrency(studentData.totalPending)}</h3>
+                    <p className="text-rose-200 text-xs mt-2">Remaining balance</p>
+                </div>
+            </div>
+
+            {/* ── Parents & Medical Row ── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Parents */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <User className="w-4 h-4 text-blue-500" />
+                        </span>
+                        Parent Details
+                    </h3>
+                    {student.parents && student.parents.length > 0 ? (
+                        <div className="space-y-3">
+                            {student.parents.map((parent, idx) => (
+                                <div key={idx} className="flex justify-between items-start bg-gray-50 rounded-xl p-3 border border-gray-100">
+                                    <div>
+                                        <p className="font-semibold text-gray-800 text-sm">{parent.name}</p>
+                                        <p className="text-xs text-gray-500 capitalize">{parent.relation}</p>
+                                    </div>
+                                    <div className="text-right text-xs">
+                                        {parent.phone && <p className="text-gray-600 font-medium">{parent.phone}</p>}
+                                        {parent.email && <p className="text-gray-400 mt-0.5">{parent.email}</p>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-gray-400 text-sm">No parent details available</p>
+                    )}
+                </div>
+
+                {/* Medical */}
+                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                        <span className="w-7 h-7 bg-red-50 rounded-lg flex items-center justify-center">
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                        </span>
+                        Medical Info
+                    </h3>
+                    {student.medical ? (
+                        <div className="space-y-3">
+                            {student.medical.allergies && student.medical.allergies.length > 0 && (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1.5 font-medium">Allergies</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {student.medical.allergies.map((allergy, i) => (
+                                            <span key={i} className="px-2.5 py-1 bg-red-50 text-red-600 rounded-full text-xs font-medium border border-red-100">
+                                                {allergy}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {student.medical.notes ? (
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1 font-medium">Notes</p>
+                                    <p className="text-sm text-gray-700 bg-gray-50 rounded-xl p-3 border border-gray-100">{student.medical.notes}</p>
+                                </div>
+                            ) : !student.medical.allergies?.length && (
+                                <p className="text-gray-400 text-sm">No medical information on record</p>
+                            )}
+                        </div>
+                    ) : (
+                        <p className="text-gray-400 text-sm">No medical information</p>
+                    )}
+                </div>
+            </div>
+
             {/* Transactions Section */}
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h2 className="text-lg font-bold text-gray-800">Transaction History</h2>

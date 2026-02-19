@@ -7,7 +7,7 @@ import { logAdminActivity } from "@/lib/logAdminActivity";
 
 export async function GET(req: Request) {
   await connectDB();
-  
+
   const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
   const user = verifyToken(token);
 
@@ -38,6 +38,22 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = TimetableCreateZ.parse(body);
 
+    // Validate Teacher Subject
+    const teacher = await import("@/models/Teacher").then((mod) => mod.default.findById(parsed.teacherId));
+    if (!teacher) {
+      return NextResponse.json({ success: false, error: "Teacher not found" }, { status: 404 });
+    }
+
+    if (!teacher.subjects?.includes(parsed.subject)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Verification Failed: ${teacher.name} is not assigned to teach ${parsed.subject}. Please update the teacher's profile first.`,
+        },
+        { status: 400 }
+      );
+    }
+
     const created = await Timetable.create(parsed);
 
     // Log admin activity
@@ -45,9 +61,12 @@ export async function POST(req: Request) {
       actorId: String(user.id),
       actorRole: user.role,
       action: "create:timetable",
-      message: `Timetable created`,
+      message: `Timetable created: ${parsed.subject} on ${parsed.day}`,
       metadata: {
         timetableId: created._id,
+        classId: parsed.classId,
+        teacherId: parsed.teacherId,
+        subject: parsed.subject,
       },
     });
 

@@ -12,7 +12,7 @@ import Alert from "@/components/common/Alert";
 import Breadcrumbs from "@/components/common/Breadcrumbs";
 import { showToast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
-import { exportToCSV } from "@/utils/exportData";
+import { exportToCSV, exportStudentsToCSV } from "@/utils/exportData";
 import {
   Users,
   UserCheck,
@@ -81,8 +81,26 @@ export default function StudentManagement() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClass, setSelectedClass] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+
+  // --- Fee assignment at enrollment ---
+  interface FeeStructureForClass {
+    _id: string;
+    name: string;
+    heads: { title: string; amount: number; frequency: string }[];
+  }
+  const [classStructures, setClassStructures] = useState<FeeStructureForClass[]>([]);
+  const [selectedStructureId, setSelectedStructureId] = useState("");
+  const [selectedHeads, setSelectedHeads] = useState<Record<string, boolean>>({});
+  const [feeMonth, setFeeMonth] = useState(new Date().getMonth().toString());
+  const [feeYear, setFeeYear] = useState(new Date().getFullYear().toString());
+  const [feeDueDate, setFeeDueDate] = useState(
+    new Date(Date.now() + 10 * 86400000).toISOString().split("T")[0]
+  );
+  const [loadingStructures, setLoadingStructures] = useState(false);
+  // ------------------------------------
 
   const [formData, setFormData] = useState<{
     firstName: string;
@@ -128,7 +146,7 @@ export default function StudentManagement() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/students");
+      const res = await fetch("/api/students?limit=500");
       const data = await res.json();
       console.log("Fetched students:", data);
       setStudents(data.students || []);
@@ -194,6 +212,48 @@ export default function StudentManagement() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // When class changes, fetch available fee structures
+    if (name === "classId" && value) {
+      fetchStructuresForClass(value);
+    } else if (name === "classId" && !value) {
+      setClassStructures([]);
+      setSelectedStructureId("");
+      setSelectedHeads({});
+    }
+  };
+
+  const fetchStructuresForClass = async (classId: string) => {
+    setLoadingStructures(true);
+    try {
+      const res = await fetch("/api/fees");
+      const data = await res.json();
+      // Filter structures matching selected class (or structures with no class = school-wide)
+      const all: FeeStructureForClass[] = data.items || [];
+      const filtered = all.filter(
+        (s: any) => !s.classId || s.classId === classId || s.classId?._id === classId
+      );
+      setClassStructures(filtered);
+      setSelectedStructureId("");
+      setSelectedHeads({});
+    } catch {
+      console.error("Failed to load fee structures");
+    } finally {
+      setLoadingStructures(false);
+    }
+  };
+
+  const handleStructureSelect = (structureId: string) => {
+    setSelectedStructureId(structureId);
+    const structure = classStructures.find((s) => s._id === structureId);
+    if (structure) {
+      // Default: all heads selected
+      const allSelected: Record<string, boolean> = {};
+      structure.heads.forEach((h) => { allSelected[h.title] = true; });
+      setSelectedHeads(allSelected);
+    } else {
+      setSelectedHeads({});
+    }
   };
 
   const handleAddStudent = async () => {
@@ -212,6 +272,12 @@ export default function StudentManagement() {
       return;
     }
 
+    // Validation: Fee Structure is now MANDATORY for new students
+    if (!editingStudent && !selectedStructureId && classStructures.length > 0) {
+      showToast.error("Please assign a Fee Structure to proceed");
+      return;
+    }
+
     try {
       const method = editingStudent ? "PUT" : "POST";
       const url = editingStudent ? `/api/students/${editingStudent._id}` : "/api/students";
@@ -223,6 +289,35 @@ export default function StudentManagement() {
       });
 
       if (res.ok) {
+        const savedData = await res.json();
+        const studentId = editingStudent ? editingStudent._id : savedData.student?._id || savedData._id;
+
+        // --- Assign selected fee heads if this is a new student and a structure was chosen ---
+        if (!editingStudent && selectedStructureId && studentId) {
+          const structure = classStructures.find((s) => s._id === selectedStructureId);
+          if (structure) {
+            const items = structure.heads
+              .filter((h) => selectedHeads[h.title])
+              .map((h) => ({ head: h.title, amount: h.amount }));
+            const totalAmount = items.reduce((sum, i) => sum + i.amount, 0);
+
+            if (items.length > 0 && totalAmount > 0) {
+              const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+              await fetch("/api/fees/transactions/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  studentId,
+                  items,
+                  amountDue: totalAmount,
+                  dueDate: feeDueDate,
+                  note: `${structure.name} - ${monthNames[parseInt(feeMonth)]} ${feeYear}`,
+                }),
+              });
+            }
+          }
+        }
+
         showToast.success(`Student ${editingStudent ? "updated" : "added"} successfully`);
         setModalOpen(false);
         setEditingStudent(null);
@@ -238,15 +333,12 @@ export default function StudentManagement() {
           admissionNo: "",
           admissionDate: "",
           parents: [{ name: "", phone: "", email: "", relation: "" }],
-          medical: {
-            allergies: [],
-            notes: "",
-          },
-          pickupInfo: {
-            pickupPerson: "",
-            pickupPhone: "",
-          },
+          medical: { allergies: [], notes: "" },
+          pickupInfo: { pickupPerson: "", pickupPhone: "" },
         });
+        setClassStructures([]);
+        setSelectedStructureId("");
+        setSelectedHeads({});
         fetchStudents();
       } else {
         showToast.error("Failed to save student");
@@ -300,12 +392,23 @@ export default function StudentManagement() {
     }
   };
 
-  const filteredStudents = students?.filter(
-    (student) =>
-      student.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.admissionNo?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStudents = students?.filter((student) => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch =
+      student.firstName.toLowerCase().includes(term) ||
+      student.lastName?.toLowerCase().includes(term) ||
+      student.admissionNo?.toLowerCase().includes(term);
+
+    const matchesClass = !selectedClass || (() => {
+      // classId can be a plain string id OR a populated object { _id, name, section }
+      const cId = typeof student.classId === "object"
+        ? (student.classId as any)?._id
+        : student.classId;
+      return cId === selectedClass;
+    })();
+
+    return matchesSearch && matchesClass;
+  });
 
   const columns: Column[] = [
     {
@@ -355,7 +458,7 @@ export default function StudentManagement() {
             <p className="text-gray-600 mt-1">Manage all students in the system</p>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => exportToCSV(students, "students.csv")} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-all">
+            <button onClick={() => exportStudentsToCSV(students, "students.csv")} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-all">
               <Download className="w-4 h-4" />
               <span className="text-sm font-medium">Export</span>
             </button>
@@ -461,10 +564,29 @@ export default function StudentManagement() {
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent transition-all"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all">
-            <Filter className="w-4 h-4" />
-            <span className="font-medium">Filters</span>
-          </button>
+          {/* Class filter dropdown */}
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-transparent text-sm min-w-[180px]"
+            >
+              <option value="">All Classes</option>
+              {classes.map((cls) => (
+                <option key={cls._id} value={cls._id}>
+                  {cls.name} — {cls.section}
+                </option>
+              ))}
+            </select>
+            {selectedClass && (
+              <button
+                onClick={() => setSelectedClass("")}
+                className="px-3 py-2.5 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -656,6 +778,114 @@ export default function StudentManagement() {
                   ))}
                 </select>
               </div>
+
+              {/* Fee Structure Assignment (only for new students) */}
+              {!editingStudent && formData.classId && (
+                <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                  <h4 className="text-sm font-semibold text-emerald-800 mb-3 flex items-center gap-2">
+                    <span className="text-base">💰</span>
+                    Assign Fee Structure at Enrollment <span className="text-red-500">*</span>
+                  </h4>
+
+                  {loadingStructures ? (
+                    <p className="text-sm text-gray-500">Loading fee structures...</p>
+                  ) : classStructures.length === 0 ? (
+                    <p className="text-sm text-gray-500 italic">No fee structures found for this class. You can assign fees later.</p>
+                  ) : (
+                    <>
+                      {/* Structure selector */}
+                      <div className="mb-3">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Select Fee Structure</label>
+                        <select
+                          value={selectedStructureId}
+                          onChange={(e) => handleStructureSelect(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400 bg-white"
+                        >
+                          <option value="">-- Pick a structure --</option>
+                          {classStructures.map((s) => (
+                            <option key={s._id} value={s._id}>{s.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Fee head checkboxes */}
+                      {selectedStructureId && (
+                        <>
+                          <p className="text-xs text-gray-500 mb-2">Select which fee heads to apply:</p>
+                          <div className="space-y-2 mb-3">
+                            {classStructures.find((s) => s._id === selectedStructureId)?.heads.map((head) => (
+                              <label
+                                key={head.title}
+                                className="flex items-center justify-between p-2.5 bg-white border border-gray-200 rounded-lg cursor-pointer hover:border-emerald-400 transition-all"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!selectedHeads[head.title]}
+                                    onChange={(e) =>
+                                      setSelectedHeads((prev) => ({ ...prev, [head.title]: e.target.checked }))
+                                    }
+                                    className="w-4 h-4 text-emerald-600 rounded"
+                                  />
+                                  <span className="text-sm font-medium text-gray-700">{head.title}</span>
+                                  <span className="text-xs text-gray-400 capitalize">({head.frequency})</span>
+                                </div>
+                                <span className="text-sm font-semibold text-emerald-700">₹{head.amount.toLocaleString()}</span>
+                              </label>
+                            ))}
+                          </div>
+
+                          {/* Total */}
+                          <div className="flex justify-between items-center p-2.5 bg-emerald-100 rounded-lg mb-3">
+                            <span className="text-sm font-semibold text-emerald-800">Total Due</span>
+                            <span className="text-sm font-bold text-emerald-900">
+                              ₹{classStructures
+                                .find((s) => s._id === selectedStructureId)
+                                ?.heads.filter((h) => selectedHeads[h.title])
+                                .reduce((sum, h) => sum + h.amount, 0)
+                                .toLocaleString() || 0}
+                            </span>
+                          </div>
+
+                          {/* Month/Year/DueDate */}
+                          <div className="grid grid-cols-3 gap-2">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Month</label>
+                              <select
+                                value={feeMonth}
+                                onChange={(e) => setFeeMonth(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-400 bg-white"
+                              >
+                                {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                                  <option key={i} value={i}>{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Year</label>
+                              <input
+                                type="number"
+                                value={feeYear}
+                                onChange={(e) => setFeeYear(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-400"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Due Date</label>
+                              <input
+                                type="date"
+                                value={feeDueDate}
+                                onChange={(e) => setFeeDueDate(e.target.value)}
+                                className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-400"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

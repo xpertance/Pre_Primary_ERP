@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import Modal from "@/components/common/Modal";
@@ -23,6 +24,9 @@ import {
   Calendar,
   MapPin,
   Eye,
+  XCircle,
+  Loader2,
+  ImagePlus,
 } from "lucide-react";
 
 interface GalleryItem {
@@ -38,7 +42,7 @@ interface GalleryItem {
   featured: boolean;
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: unknown; // Added index signature
+  [key: string]: unknown;
 }
 
 interface Column {
@@ -63,6 +67,7 @@ export default function GalleryManagement() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const router = useRouter();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -73,7 +78,82 @@ export default function GalleryManagement() {
     eventLocation: "",
     isPublished: false,
     featured: false,
+    images: [] as { url: string; caption: string }[],
   });
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Helper to handle file selection
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      await uploadImages(Array.from(e.target.files));
+    }
+  };
+
+  const uploadImages = async (files: File[]) => {
+    setUploading(true);
+    setUploadProgress(0);
+    const total = files.length;
+    let completed = 0;
+
+    const newImages: { url: string; caption: string }[] = [];
+
+    try {
+      await Promise.all(
+        files.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          try {
+            const res = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+            });
+            const data = await res.json();
+
+            if (data.success) {
+              newImages.push({ url: data.url, caption: "" });
+            } else {
+              showToast.error(`Failed to upload ${file.name}`);
+            }
+          } catch (err) {
+            console.error(err);
+            showToast.error(`Error uploading ${file.name}`);
+          } finally {
+            completed++;
+            setUploadProgress(Math.round((completed / total) * 100));
+          }
+        })
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...newImages],
+      }));
+
+    } catch (error) {
+      console.error("Upload error", error);
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateCaption = (index: number, caption: string) => {
+    setFormData((prev) => {
+      const updated = [...prev.images];
+      updated[index].caption = caption;
+      return { ...prev, images: updated };
+    });
+  };
 
   useEffect(() => {
     fetchData();
@@ -150,6 +230,7 @@ export default function GalleryManagement() {
       eventLocation: "",
       isPublished: false,
       featured: false,
+      images: [],
     });
     setEditingId(null);
   };
@@ -164,6 +245,7 @@ export default function GalleryManagement() {
       eventLocation: gallery.eventLocation || "",
       isPublished: gallery.isPublished,
       featured: gallery.featured,
+      images: gallery.images || [],
     });
     setEditingId(gallery._id);
     setShowModal(true);
@@ -288,7 +370,7 @@ export default function GalleryManagement() {
         </div>
       </div>
 
-      {/* Header */}
+      {/* Stats */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
@@ -394,6 +476,13 @@ export default function GalleryManagement() {
           loading={loading}
           actions={(row) => (
             <div className="flex gap-2">
+              <button
+                onClick={() => router.push(`/dashboard/gallery/${(row as GalleryItem)._id}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-100 transition-all text-sm font-medium"
+              >
+                <Eye className="w-3.5 h-3.5" />
+                View
+              </button>
               <button
                 onClick={() => handleEdit(row as GalleryItem)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
@@ -529,30 +618,100 @@ export default function GalleryManagement() {
               />
             </div>
           </div>
+        </div>
 
-          <div className="space-y-2 pt-4 border-t">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="isPublished"
-                checked={formData.isPublished}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-400"
-              />
-              <span className="text-sm font-medium text-gray-700">Publish album</span>
-            </label>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <ImageIcon className="w-4 h-4 inline mr-1" />
+            Photos
+          </label>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="featured"
-                checked={formData.featured}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-400"
-              />
-              <span className="text-sm font-medium text-gray-700">Mark as featured</span>
-            </label>
+          {/* Upload Area */}
+          <div className="border-2 border-dashed border-purple-200 rounded-xl p-6 text-center hover:bg-purple-50 transition-colors relative">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              disabled={uploading}
+            />
+            <div className="flex flex-col items-center gap-2">
+              {uploading ? (
+                <>
+                  <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+                  <p className="text-sm text-purple-600 font-medium">Uploading photos...</p>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <ImagePlus className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Click or Drag photos here</p>
+                    <p className="text-xs text-gray-500">Supports JPG, PNG (Max 5MB)</p>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
+
+          {/* Image Grid */}
+          {formData.images.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+              {formData.images.map((img, index) => (
+                <div key={index} className="group relative bg-gray-50 rounded-lg overflow-hidden border border-gray-200">
+                  <div className="aspect-square relative">
+                    <img
+                      src={img.url}
+                      alt="Upload preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity transform hover:scale-110"
+                      title="Remove photo"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="p-2">
+                    <input
+                      type="text"
+                      placeholder="Add caption..."
+                      value={img.caption}
+                      onChange={(e) => updateCaption(index, e.target.value)}
+                      className="w-full text-xs border-none bg-transparent focus:ring-0 placeholder-gray-400"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2 pt-4 border-t">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="isPublished"
+              checked={formData.isPublished}
+              onChange={handleInputChange}
+              className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-400"
+            />
+            <span className="text-sm font-medium text-gray-700">Publish album</span>
+          </label>
+
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              name="featured"
+              checked={formData.featured}
+              onChange={handleInputChange}
+              className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-400"
+            />
+            <span className="text-sm font-medium text-gray-700">Mark as featured</span>
+          </label>
         </div>
       </Modal>
     </div>

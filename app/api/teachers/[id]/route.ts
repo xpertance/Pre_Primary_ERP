@@ -49,21 +49,23 @@ export async function PUT(
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
   }
   console.log("User role:", user.role, "User ID:", user.id);
+
   try {
     const body = await req.json();
-    // console.log("Request body:", body);
-    // const parsed = TeacherCreateZ.partial().parse(body);
-    // console.log("Parsed data:", parsed);
+
     if (user.role === "teacher" && String(user.id) !== String(id)) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
+
+    // Get old teacher data to compare classes
+    const oldTeacher = await Teacher.findById(id);
+    if (!oldTeacher) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
 
     // Hash password if provided
     const updateData = { ...body };
     if (updateData.password && updateData.password.trim() !== "") {
       updateData.password = await bcryptjs.hash(updateData.password, 10);
     } else {
-      // Don't update password if empty or not provided
       delete updateData.password;
     }
 
@@ -72,6 +74,33 @@ export async function PUT(
     if (!updated) {
       return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
     }
+
+    // --- SYNC LOGIC: Teacher -> Class ---
+    // Only admin can change classes, usually.
+    if (updateData.classes) {
+      const oldClassIds = oldTeacher.classes.map((c: any) => c.classId.toString());
+      const newClassIds = updateData.classes.map((c: any) => c.classId.toString());
+
+      import("@/models/Class").then(async ({ default: ClassModel }) => {
+        const added = newClassIds.filter((cid: string) => !oldClassIds.includes(cid));
+        const removed = oldClassIds.filter((cid: string) => !newClassIds.includes(cid));
+
+        if (added.length > 0) {
+          await ClassModel.updateMany(
+            { _id: { $in: added } },
+            { $addToSet: { teachers: updated._id } }
+          );
+        }
+
+        if (removed.length > 0) {
+          await ClassModel.updateMany(
+            { _id: { $in: removed } },
+            { $pull: { teachers: updated._id } }
+          );
+        }
+      });
+    }
+    // ------------------------------------
 
     // Log admin activity only if admin is updating
     if (user.role === "admin") {

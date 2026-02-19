@@ -31,7 +31,11 @@ export async function GET(req: NextRequest) {
 
         // Fetch all students with their class information
         const students = await Student.find()
-            .populate("classId", "name section")
+            .populate({
+                path: "classId",
+                select: "name section teachers",
+                populate: { path: "teachers", select: "name email phone" }
+            })
             .lean();
 
         // Fetch all fee transactions

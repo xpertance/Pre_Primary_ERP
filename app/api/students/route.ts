@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   // pagination
   const url = new URL(req.url);
   const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
-  const limit = Math.max(1, Math.min(100, parseInt(url.searchParams.get("limit") || "10")));
+  const limit = Math.max(1, Math.min(500, parseInt(url.searchParams.get("limit") || "10")));
   const skip = (page - 1) * limit;
 
   // optional filter by classId, name, etc.
@@ -132,42 +132,9 @@ export async function POST(req: Request) {
       metadata: { studentId: created._id, firstName: parsed.firstName, lastName: parsed.lastName, admissionNo: parsed.admissionNo },
     });
 
-    // Automatic Fee Assignment
-    if (parsed.classId) {
-      try {
-        const FeeStructure = await import("@/models/FeeStructure").then(mod => mod.default);
-        const FeeTransaction = await import("@/models/FeeTransaction").then(mod => mod.default);
 
-        const feeStructure = await FeeStructure.findOne({
-          classId: parsed.classId,
-          active: true
-        });
-
-        if (feeStructure) {
-          const items = feeStructure.heads.map((head: any) => ({
-            head: head.title,
-            amount: head.amount
-          }));
-
-          const totalAmount = items.reduce((sum: number, item: any) => sum + item.amount, 0);
-
-          await FeeTransaction.create({
-            studentId: created._id,
-            amountDue: totalAmount,
-            amountPaid: 0,
-            fineAmount: 0,
-            status: "due",
-            items: items,
-            dueDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Default due date next month
-          });
-
-          console.log(`Automatically assigned fee structure '${feeStructure.name}' to student ${created._id}`);
-        }
-      } catch (feeError) {
-        console.error("Error creating initial fee transaction:", feeError);
-        // Don't fail the student creation if fee assignment fails, just log it
-      }
-    }
+    // Fee assignment is now handled explicitly via the UI during enrollment.
+    // No automatic fee creation here to avoid duplicate transactions.
 
     return NextResponse.json({ success: true, student: created }, { status: 201 });
   } catch (err: unknown) {

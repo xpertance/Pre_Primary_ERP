@@ -16,7 +16,10 @@ export async function GET(req: Request) {
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
     const limit = Math.max(1, Math.min(100, parseInt(url.searchParams.get("limit") || "10")));
 
-    const filter: Record<string, unknown> = { isPublished: true };
+    const filter: Record<string, unknown> = {};
+    const status = url.searchParams.get("status");
+    if (status === "published") filter.isPublished = true;
+    if (status === "draft") filter.isPublished = false;
 
     const skip = (page - 1) * limit;
 

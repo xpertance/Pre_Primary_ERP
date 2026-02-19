@@ -45,23 +45,36 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [students, teachers, classes, admissions, attendance, fees] = await Promise.all([
-          fetch("/api/students").then((r) => r.json()),
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const today = now.toISOString().split('T')[0];
+
+        const [students, teachers, classes, feeSummary, attendance] = await Promise.all([
+          fetch("/api/students?limit=500").then((r) => r.json()),
           fetch("/api/teachers").then((r) => r.json()),
           fetch("/api/classes").then((r) => r.json()),
-          fetch("/api/admission/list").then((r) => r.json()),
-          fetch("/api/attendance").then((r) => r.json()),
-          fetch("/api/fees").then((r) => r.json()),
+          fetch("/api/fees/summary").then((r) => r.json()),
+          fetch(`/api/attendance?startDate=${startOfMonth}&endDate=${today}&limit=1`).then((r) => r.json()),
         ]);
 
+        // Calculate new admissions (joined in current month)
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const newAdmissions = students?.students?.filter((s: any) => {
+          if (!s.admissionDate && !s.createdAt) return false;
+          const date = new Date(s.admissionDate || s.createdAt);
+          return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+        }).length || 0;
+
         setStats({
-          totalStudents: students?.length || 0,
-          totalTeachers: teachers?.length || 0,
-          totalClasses: classes?.length || 0,
-          totalAdmissions: admissions?.length || 0,
-          pendingAdmissions: admissions?.filter((a: any) => a.status === "pending").length || 0,
-          totalAttendance: attendance?.length || 0,
-          totalFees: fees?.length || 0,
+          totalStudents: students?.students?.length ?? students?.total ?? 0,
+          totalTeachers: teachers?.teachers?.length ?? teachers?.data?.length ?? 0,
+          totalClasses: classes?.classes?.length ?? 0,
+          totalAdmissions: newAdmissions, // Real calculated value
+          pendingAdmissions: 0, // Pending system implementation
+          totalAttendance: attendance?.pagination?.total ?? 0,
+          totalFees: feeSummary?.totalCollected ?? 0, // Real revenue
         });
       } catch (error) {
         console.error("Failed to fetch stats:", error);
@@ -127,12 +140,12 @@ export default function AdminDashboard() {
     {
       title: "Fees",
       icon: DollarSign,
-      count: stats.totalFees,
+      count: `₹${stats.totalFees.toLocaleString()}`,
       bgColor: "bg-emerald-50",
       iconBg: "bg-emerald-500",
       textColor: "text-emerald-700",
       href: "/fees",
-      description: "Fee transactions",
+      description: "Revenue this year",
     },
   ];
 
@@ -149,11 +162,11 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-lg">
             <Clock className="w-4 h-4" />
-            <span className="text-sm font-medium">{new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
+            <span className="text-sm font-medium">{new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
             })}</span>
           </div>
         </div>
@@ -200,7 +213,7 @@ export default function AdminDashboard() {
             </div>
             <h2 className="text-lg font-semibold text-gray-800">Pending Admissions</h2>
           </div>
-          
+
           <div className="space-y-3">
             {stats.pendingAdmissions > 0 ? (
               <>
@@ -233,7 +246,7 @@ export default function AdminDashboard() {
             </div>
             <h2 className="text-lg font-semibold text-gray-800">Quick Actions</h2>
           </div>
-          
+
           <div className="space-y-2">
             <Link
               href="/students"

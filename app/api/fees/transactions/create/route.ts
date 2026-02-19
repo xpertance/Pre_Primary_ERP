@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
             fineAmount: 0,
             status: "due",
             items,
-            dueDate: new Date(dueDate),
+            dueDate: dueDate ? new Date(dueDate) : undefined,
+            note,
             createdAt: new Date(),
             updatedAt: new Date()
         });

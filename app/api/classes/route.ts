@@ -21,8 +21,14 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const q = url.searchParams.get("q") || "";
   const limit = Math.min(100, parseInt(url.searchParams.get("limit") || "10"));
-  
+
   const filter: any = {};
+
+  // If user is a teacher, only show their assigned classes
+  if (user.role === "teacher") {
+    filter.teachers = user.id;
+  }
+
   if (q) {
     filter.$or = [
       { name: { $regex: q, $options: "i" } },

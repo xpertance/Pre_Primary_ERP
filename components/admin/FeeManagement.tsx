@@ -63,10 +63,20 @@ interface Column {
 export default function FeeStructureManagement() {
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [feeHeadsMaster, setFeeHeadsMaster] = useState<{ _id: string, name: string, defaultAmount: number, type: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [editingStructure, setEditingStructure] = useState<FeeStructure | null>(null);
+  const [assigningStructure, setAssigningStructure] = useState<FeeStructure | null>(null);
+
+  const [assignData, setAssignData] = useState({
+    classId: "",
+    month: new Date().getMonth().toString(),
+    year: new Date().getFullYear().toString(),
+    dueDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString().split('T')[0]
+  });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -80,6 +90,7 @@ export default function FeeStructureManagement() {
   useEffect(() => {
     fetchFeeStructures();
     fetchClasses();
+    fetchFeeHeadsMaster();
   }, []);
 
   const fetchFeeStructures = async () => {
@@ -105,6 +116,18 @@ export default function FeeStructureManagement() {
     }
   };
 
+  const fetchFeeHeadsMaster = async () => {
+    try {
+      const res = await fetch("/api/fees/heads");
+      const data = await res.json();
+      if (data.success) {
+        setFeeHeadsMaster(data.heads || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch fee heads master:", error);
+    }
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
@@ -126,7 +149,22 @@ export default function FeeStructureManagement() {
 
   const handleFeeHeadChange = (index: number, field: keyof FeeHead, value: string | number) => {
     const updatedHeads = [...formData.heads];
-    updatedHeads[index] = { ...updatedHeads[index], [field]: value };
+
+    if (field === "title") {
+      const selectedMaster = feeHeadsMaster.find((h) => h.name === value);
+      if (selectedMaster) {
+        updatedHeads[index] = {
+          ...updatedHeads[index],
+          title: selectedMaster.name,
+          amount: selectedMaster.defaultAmount,
+          frequency: (selectedMaster.type === "one-time" ? "one-time" : "monthly") as FeeHead["frequency"],
+        };
+      } else {
+        updatedHeads[index] = { ...updatedHeads[index], [field]: value };
+      }
+    } else {
+      updatedHeads[index] = { ...updatedHeads[index], [field]: value };
+    }
     setFormData((prev) => ({ ...prev, heads: updatedHeads }));
   };
 
@@ -140,6 +178,14 @@ export default function FeeStructureManagement() {
   const handleSaveStructure = async () => {
     if (!formData.name || formData.heads.length === 0) {
       showToast.error("Name and at least one fee head are required");
+      return;
+    }
+
+    // Check for duplicate heads
+    const titles = formData.heads.map((h) => h.title);
+    const hasDuplicates = titles.some((t, i) => titles.indexOf(t) !== i);
+    if (hasDuplicates) {
+      showToast.error("Duplicate fee heads are not allowed in the same structure");
       return;
     }
 
@@ -374,6 +420,22 @@ export default function FeeStructureManagement() {
           actions={(row) => (
             <div className="flex gap-2">
               <button
+                onClick={() => {
+                  setAssigningStructure(row as FeeStructure);
+                  setAssignData({
+                    classId: (row as FeeStructure).classId || "",
+                    month: new Date().getMonth().toString(),
+                    year: new Date().getFullYear().toString(),
+                    dueDate: new Date(Date.now() + 10 * 86400000).toISOString().split("T")[0],
+                  });
+                  setAssignModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 border border-purple-200 text-purple-700 rounded-lg hover:bg-purple-100 transition-all text-sm font-medium"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                Assign
+              </button>
+              <button
                 onClick={() => handleEditStructure(row as FeeStructure)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
               >
@@ -487,13 +549,16 @@ export default function FeeStructureManagement() {
                     <X className="w-4 h-4" />
                   </button>
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <input
-                      type="text"
-                      placeholder="Fee Head Title *"
+                    <select
                       value={head.title}
                       onChange={(e) => handleFeeHeadChange(idx, "title", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm"
-                    />
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm bg-white"
+                    >
+                      <option value="">Select Head</option>
+                      {feeHeadsMaster.map(h => (
+                        <option key={h._id} value={h.name}>{h.name}</option>
+                      ))}
+                    </select>
                     <input
                       type="number"
                       placeholder="Amount *"
@@ -564,6 +629,92 @@ export default function FeeStructureManagement() {
                 <span className="text-sm font-medium text-gray-700">Active Structure</span>
               </label>
             </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Assign Structure Modal */}
+      <Modal
+        isOpen={assignModalOpen}
+        onClose={() => setAssignModalOpen(false)}
+        title="Assign Fee Structure"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setAssignModalOpen(false)}>Cancel</Button>
+            <Button onClick={async () => {
+              if (!assignData.classId) {
+                showToast.error("Please select a class");
+                return;
+              }
+              if (!confirm(`Generate fees for all students in this class?`)) return;
+              try {
+                const res = await fetch("/api/fees/assign", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ structureId: assigningStructure?._id, ...assignData }),
+                });
+                const data = await res.json();
+                if (data.success) {
+                  showToast.success(data.message);
+                  setAssignModalOpen(false);
+                } else {
+                  showToast.error(data.error || "Failed to assign fees");
+                }
+              } catch {
+                showToast.error("Failed to assign fees");
+              }
+            }}>Generate Fees</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-purple-50 border border-purple-200 text-purple-800 rounded-lg text-sm">
+            Generating fee transactions for: <strong>{assigningStructure?.name}</strong>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Select Class *</label>
+            <select
+              value={assignData.classId}
+              onChange={(e) => setAssignData({ ...assignData, classId: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 bg-white"
+            >
+              <option value="">-- Select Class --</option>
+              {classes.map((c) => (
+                <option key={c._id} value={c._id}>{c.name} - {c.section}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">For Month</label>
+              <select
+                value={assignData.month}
+                onChange={(e) => setAssignData({ ...assignData, month: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 bg-white"
+              >
+                {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map((m, i) => (
+                  <option key={i} value={i}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+              <input
+                type="number"
+                value={assignData.year}
+                onChange={(e) => setAssignData({ ...assignData, year: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+            <input
+              type="date"
+              value={assignData.dueDate}
+              onChange={(e) => setAssignData({ ...assignData, dueDate: e.target.value })}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400"
+            />
           </div>
         </div>
       </Modal>

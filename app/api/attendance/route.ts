@@ -27,13 +27,15 @@ export async function GET(req: Request) {
 
     if (startDate || endDate) {
       filter.date = {};
+
       if (startDate) {
-        (filter.date as Record<string, unknown>).$gte = new Date(startDate);
+        const [sy, sm, sd] = startDate.split("-").map(Number);
+        (filter.date as Record<string, unknown>).$gte = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
       }
+
       if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        (filter.date as Record<string, unknown>).$lte = end;
+        const [ey, em, ed] = endDate.split("-").map(Number);
+        (filter.date as Record<string, unknown>).$lte = new Date(ey, em - 1, ed, 23, 59, 59, 999);
       }
     }
 

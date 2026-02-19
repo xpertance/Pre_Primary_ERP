@@ -30,7 +30,35 @@ export async function PUT(req: Request, { params }: any) {
     const body = await req.json();
     const parsed = ClassCreateZ.partial().parse(body);
 
+    // Get old class data to compare teachers
+    const oldClass = await ClassModel.findById(params.id);
+    if (!oldClass) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+
     const updated = await ClassModel.findByIdAndUpdate(params.id, parsed, { new: true });
+
+    // --- SYNC LOGIC: Class -> Teacher ---
+    if (parsed.teachers) {
+      const oldTeacherIds = oldClass.teachers.map((t: any) => t.toString());
+      const newTeacherIds = parsed.teachers.map((t: any) => t.toString());
+
+      const added = newTeacherIds.filter((id: string) => !oldTeacherIds.includes(id));
+      const removed = oldTeacherIds.filter((id: string) => !newTeacherIds.includes(id));
+
+      if (added.length > 0) {
+        await Teacher.updateMany(
+          { _id: { $in: added } },
+          { $addToSet: { classes: { classId: updated._id, section: updated.section } } }
+        );
+      }
+
+      if (removed.length > 0) {
+        await Teacher.updateMany(
+          { _id: { $in: removed } },
+          { $pull: { classes: { classId: updated._id } } }
+        );
+      }
+    }
+    // ------------------------------------
 
     // Log admin activity
     await logAdminActivity({

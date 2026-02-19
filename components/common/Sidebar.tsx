@@ -16,7 +16,7 @@ import {
   PartyPopper,
   Bus,
   House,
-  UtensilsCrossed,
+  // UtensilsCrossed, // Meal Plan (hidden)
   Image,
   Settings,
   Baby,
@@ -52,7 +52,9 @@ export default function Sidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   // Keep sidebar visible on all dashboard routes so it stays present
   // across admin modules (but still allow mobile toggle via `isOpen`).
-  const visible = (isOpen || (pathname && pathname.startsWith("/dashboard")));
+  // use isOpen prop to control visibility on mobile
+  // lg:translate-x-0 class ensures it's always visible on desktop
+  const visible = isOpen;
 
   const menuList: MenuItem[] = [
     {
@@ -121,6 +123,7 @@ export default function Sidebar({
       color: "red",
     },
     */
+    /* Log Activity hidden for small school client 
     {
       name: "Log Activity",
       path: "/dashboard/log-activity",
@@ -128,6 +131,7 @@ export default function Sidebar({
       icon: Clock,
       color: "red",
     },
+    */
     {
       name: "Events",
       path: "/dashboard/events",
@@ -142,6 +146,7 @@ export default function Sidebar({
       icon: Bus,
       color: "cyan",
     },
+    /* Meal Plan hidden — not needed for this school
     {
       name: "Meal Plan",
       path: "/dashboard/meal-plan",
@@ -149,6 +154,7 @@ export default function Sidebar({
       icon: UtensilsCrossed,
       color: "orange",
     },
+    */
     {
       name: "Gallery",
       path: "/dashboard/gallery",
