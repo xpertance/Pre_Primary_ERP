@@ -1,4 +1,5 @@
 "use client"
+import Link from "next/link";
 import Image from "next/image";
 import {
   Users,
@@ -178,9 +179,9 @@ export default function LandingPage() {
               <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
               <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">Testimonials</a>
               <a href="#contact" className="text-gray-600 hover:text-gray-900 transition-colors">Contact</a>
-              <button className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+              <Link href="/login" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
                 Get Started
-              </button>
+              </Link>
             </div>
 
             {/* Mobile Menu Button */}
@@ -201,9 +202,9 @@ export default function LandingPage() {
                 <a href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</a>
                 <a href="#testimonials" className="text-gray-600 hover:text-gray-900">Testimonials</a>
                 <a href="#contact" className="text-gray-600 hover:text-gray-900">Contact</a>
-                <button className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
+                <Link href="/login" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-center">
                   Get Started
-                </button>
+                </Link>
               </div>
             </div>
           )}

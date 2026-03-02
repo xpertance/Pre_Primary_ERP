@@ -19,7 +19,7 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
   }
 
-  const student = await parentOwnsStudent(studentId, parent.id);
+  const student = await parentOwnsStudent(studentId, parent.id, (parent as any).email);
 
   if (!student) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });

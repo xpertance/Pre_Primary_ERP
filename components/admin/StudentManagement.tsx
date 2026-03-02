@@ -263,12 +263,12 @@ export default function StudentManagement() {
     }
 
     if (!editingStudent && !formData.email) {
-      showToast.error("Email is required for new student");
+      showToast.error("Parent login email is required");
       return;
     }
 
     if (!editingStudent && !formData.password) {
-      showToast.error("Password is required for new student");
+      showToast.error("Parent login password is required");
       return;
     }
 
@@ -690,24 +690,30 @@ export default function StudentManagement() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Email *"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  placeholder="Enter email"
-                  fullWidth
-                />
-                <Input
-                  label={editingStudent ? "Password (leave blank to keep current)" : "Password *"}
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder="Enter password (min 6 characters)"
-                  fullWidth
-                />
+                <div>
+                  <Input
+                    label="Parent Login Email *"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Parent's email address"
+                    fullWidth
+                  />
+                  <p className="text-xs text-blue-600 mt-1">📱 Parent uses this to login to the mobile app</p>
+                </div>
+                <div>
+                  <Input
+                    label={editingStudent ? "Parent Login Password (leave blank to keep)" : "Parent Login Password *"}
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Set a password for parent app login"
+                    fullWidth
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Share this password with the parent</p>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

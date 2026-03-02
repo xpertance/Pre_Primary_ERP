@@ -13,13 +13,22 @@ interface StudentLean {
   [key: string]: unknown; // Allow additional fields
 }
 
-export async function parentOwnsStudent(studentId: string, parentId: string): Promise<StudentLean | null> {
-  const student = await Student.findById(studentId).lean<StudentLean>();
-  if (!student) return null;
+export async function parentOwnsStudent(studentId: string, loggedInParentId: string, parentEmail?: string): Promise<StudentLean | null> {
+  // If the logged in user is directly the student (student login scenario)
+  if (String(studentId) === String(loggedInParentId)) {
+    return await Student.findById(studentId).lean<StudentLean>() as StudentLean | null;
+  }
 
-  const isParent = (student.parents || []).some(
-    (p: Parent) => String(p.parentId) === String(parentId)
-  );
+  // Otherwise, logged in as Parent (User model). Check the student's parents array.
+  const query: any = {
+    _id: studentId,
+    $or: [{ "parents.parentId": loggedInParentId }]
+  };
 
-  return isParent ? student : null;
+  if (parentEmail) {
+    query.$or.push({ "parents.email": parentEmail });
+  }
+
+  const student = await Student.findOne(query).lean<StudentLean>();
+  return student as StudentLean | null;
 }

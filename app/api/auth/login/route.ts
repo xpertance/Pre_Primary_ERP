@@ -50,6 +50,13 @@ export async function POST(req: Request) {
       if (user) {
         detectedRole = "student";
       }
+    } else if (role === "parent") {
+      // Parent logs in using the email/password that was set on the Student record
+      // by the admin when the student was created. No separate User record needed.
+      user = await Student.findOne({ email: trimmedEmail });
+      if (user) {
+        detectedRole = "parent";
+      }
     } else if (role === "admin" || !role) {
       // Try User model first (admin/parent)
       user = await User.findOne({ email: trimmedEmail });
@@ -156,7 +163,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const token = jwt.sign({ id: user._id, role: detectedRole }, jwtSecret, {
+    // For parent role: embed studentId so /api/parent/students can directly
+    // return the child without needing a separate parent-user linkage.
+    const tokenPayload: Record<string, unknown> = { id: user._id, role: detectedRole, email: user.email };
+    if (detectedRole === "parent") {
+      tokenPayload.studentId = user._id; // student._id IS the child
+    }
+    const token = jwt.sign(tokenPayload, jwtSecret, {
       expiresIn: "7d",
     });
 

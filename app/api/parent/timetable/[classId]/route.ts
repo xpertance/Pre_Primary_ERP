@@ -19,17 +19,31 @@ export async function GET(
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
   }
 
-  // verify parent has a student in this class
-  const student = await Student.findOne({
-    classId,
-    "parents.parentId": parent.id,
-  }).lean();
+  // Verify the parent actually manages a child assigned to this class
+  const studentId = (parent as any).studentId || parent.id;
+  const parentEmail = (parent as any).email;
+
+  const authQuery: any = {
+    classId: classId,
+    $or: [
+      { _id: studentId },
+      { "parents.parentId": parent.id }
+    ]
+  };
+
+  if (parentEmail) {
+    authQuery.$or.push({ "parents.email": parentEmail });
+  }
+
+  const student = await Student.findOne(authQuery).lean();
 
   if (!student) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
   }
 
-  const timetable = await Timetable.find({ classId }).lean();
+  const timetable = await Timetable.find({ classId })
+    .populate("teacherId", "name")
+    .lean();
 
   return NextResponse.json({ success: true, timetable });
 }
