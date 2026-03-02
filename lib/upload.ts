@@ -2,24 +2,36 @@
 import { v2 as cloudinary } from "cloudinary";
 import streamifier from "streamifier";
 
-const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
-const API_KEY = process.env.CLOUDINARY_API_KEY;
-const API_SECRET = process.env.CLOUDINARY_API_SECRET;
+let isConfigured = false;
 
-if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
-  throw new Error("Cloudinary configuration missing");
-}
+const configureCloudinary = () => {
+  if (isConfigured) return;
 
-cloudinary.config({
-  cloud_name: CLOUD_NAME,
-  api_key: API_KEY,
-  api_secret: API_SECRET,
-});
+  const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+  const API_KEY = process.env.CLOUDINARY_API_KEY;
+  const API_SECRET = process.env.CLOUDINARY_API_SECRET;
+
+  if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE !== 'phase-production-build') {
+      console.warn("Cloudinary configuration missing");
+    }
+    return;
+  }
+
+  cloudinary.config({
+    cloud_name: CLOUD_NAME,
+    api_key: API_KEY,
+    api_secret: API_SECRET,
+  });
+
+  isConfigured = true;
+};
 
 export async function uploadFile(
   buffer: Buffer,
   folder: string
 ): Promise<{ secure_url: string; public_id: string }> {
+  configureCloudinary();
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder },
