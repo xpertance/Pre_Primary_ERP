@@ -1,11 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGO_URI = process.env.MONGODB_URI as string;
-
-if (!MONGO_URI) {
-  throw new Error("Please define MONGODB_URI in env file");
-}
-
 let cached = (global as any).mongoose;
 
 if (!cached) {
@@ -13,6 +7,13 @@ if (!cached) {
 }
 
 export async function connectDB() {
+  const MONGO_URI = process.env.MONGODB_URI as string;
+  if (!MONGO_URI) {
+    if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE !== 'phase-production-build') {
+      console.warn("Please define MONGODB_URI in env file");
+    }
+  }
+
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
