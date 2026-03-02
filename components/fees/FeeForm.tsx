@@ -57,7 +57,7 @@ export default function FeeStructureForm({ initial = {}, onSaved }: FeeStructure
       } else {
         alert(d.error || "Error");
       }
-    } catch (error) {
+    } catch {
       alert("Failed to save fee structure");
     }
   }

@@ -4,7 +4,6 @@ import { jwtVerify } from "jose";
 
 export async function middleware(req: NextRequest) {
   // Debug: log cookie header and pathname to help diagnose missing token
-  const cookieHeader = req.headers.get("cookie") || "";
   const token = req.cookies.get("token")?.value;
   // console.log("[middleware] path=", req.nextUrl.pathname, "cookieHeader=", cookieHeader, "token=", token);
 

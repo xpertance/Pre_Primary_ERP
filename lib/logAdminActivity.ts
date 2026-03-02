@@ -16,22 +16,22 @@ interface LogParams {
 export async function logAdminActivity(params: LogParams) {
   try {
     let email = params.actorEmail;
-    
+
     // If email not provided, try to fetch it from User model
     if (!email && params.actorId) {
       try {
         await connectDB();
         const { default: User } = await import("@/models/User").catch(() => ({ default: null }));
         if (User) {
-          const user = await User.findById(params.actorId).select("email").lean();
+          const user = await User.findById(params.actorId).select("email").lean() as { email?: string } | null;
           email = user?.email || "unknown";
         }
-      } catch (err) {
+      } catch {
         // Silently fail - use "unknown" for email
         email = "unknown";
       }
     }
-    
+
     const entry = new LogActivity({
       actorId: params.actorId,
       actorEmail: email || "unknown",

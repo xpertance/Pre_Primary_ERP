@@ -32,15 +32,7 @@ export type IStudentDoc = mongoose.Document & {
   updatedAt: Date;
 };
 
-const ParentSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    phone: String,
-    email: String,
-    relation: String,
-  },
-  { _id: false }
-);
+
 
 const DocumentSchema = new mongoose.Schema(
   {

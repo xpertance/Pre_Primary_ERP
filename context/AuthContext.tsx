@@ -8,6 +8,7 @@ export function AuthProvider({ children }: any) {
 
   useEffect(() => {
     const saved = localStorage.getItem("user");
+    // eslint-disable-next-line
     if (saved) setUser(JSON.parse(saved));
   }, []);
 

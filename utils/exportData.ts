@@ -131,4 +131,5 @@ export function exportToJSON(data: any[], filename = "export.json") {
   URL.revokeObjectURL(url);
 }
 
-export default { exportToCSV, exportStudentsToCSV, exportToJSON };
+const exportUtils = { exportToCSV, exportStudentsToCSV, exportToJSON };
+export default exportUtils;
