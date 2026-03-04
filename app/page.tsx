@@ -15,12 +15,117 @@ import {
   ArrowRight,
   Star,
   Menu,
-  X
+  X,
+  UploadCloud,
+  FileText
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("");
+  const [isCareersModalOpen, setIsCareersModalOpen] = useState(false);
+  const [resumeName, setResumeName] = useState("");
+  const [isSubmittingForm, setIsSubmittingForm] = useState(false);
+
+  const handleCareerSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmittingForm(true);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+      // Using FormSubmit AJAX to bypass page reloads & safely attach files to sales@xpertance.in
+      const response = await fetch("https://formsubmit.co/ajax/sales@xpertance.in", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert("Application submitted successfully! We will review and get back to you soon.");
+        setResumeName("");
+        setIsCareersModalOpen(false);
+        form.reset();
+      } else {
+        alert("Failed to send application. Please try again.");
+      }
+    } catch (error) {
+      alert("Error submitting. Please try later.");
+    } finally {
+      setIsSubmittingForm(false);
+    }
+  };
+
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+
+  const handleContactSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmittingContact(true);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch("https://formsubmit.co/ajax/sales@xpertance.in", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        alert("Thank you! Your message has been sent successfully.");
+        form.reset();
+      } else {
+        alert("Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      alert("Error sending message. Please try later.");
+    } finally {
+      setIsSubmittingContact(false);
+    }
+  };
+
+  useEffect(() => {
+    const sections = ["features", "benefits", "pricing", "testimonials", "contact"];
+    const observerOptions = {
+      root: null,
+      rootMargin: "-80px 0px -40% 0px", // 80px accommodates the fixed navbar
+      threshold: 0,
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      // Find the intersecting entry that is currently active, or the last one intersecting
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    sections.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+
+    // Handle Contact section specially when near the bottom of the page
+    const handleScroll = () => {
+      const scrollBottom = window.scrollY + window.innerHeight;
+      const pageHeight = document.documentElement.scrollHeight;
+      // If we are within 300px of the bottom of the page, ensure contact is highlighted
+      if (scrollBottom >= pageHeight - 300) {
+        setActiveSection("contact");
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   const features = [
     {
@@ -85,21 +190,21 @@ export default function LandingPage() {
 
   const testimonials = [
     {
-      name: "Vikram Malhotra",
-      role: "Principal, EuroKids International",
-      content: "Implementing this ERP was the best decision for our campus. It has streamlined our administrative tasks seamlessly and improved our operational efficiency by 40%.",
+      name: "Priya Sharma",
+      role: "Principal, Little Stars Academy",
+      content: "Pre-Primary ERP has transformed how we manage our school. The intuitive interface makes it easy for all staff members to use.",
       rating: 5
     },
     {
-      name: "Sneha Kapoor",
-      role: "Director, Kangaroo Kids",
-      content: "The parent communication portal is fantastic. It has bridged the gap between teachers and parents effectively, ensuring everyone is on the same page regarding child progress.",
+      name: "Rajesh Kumar",
+      role: "Administrator, Sunshine Kindergarten",
+      content: "The attendance and fee management features have saved us countless hours. Parent feedback has been overwhelmingly positive.",
       rating: 5
     },
     {
-      name: "Rohan Deshmukh",
-      role: "Administrator, Podar Jumbo Kids",
-      content: "Managing student fees and attendance has never been easier. The automated reports are a lifesaver, allowing us to focus more on education quality.",
+      name: "Anjali Patel",
+      role: "Director, Growing Minds School",
+      content: "Excellent support team and regular updates. This system grows with our needs and handles everything we require.",
       rating: 5
     }
   ];
@@ -163,7 +268,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl flex items-center justify-center shadow-md">
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -174,12 +279,25 @@ export default function LandingPage() {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-600 hover:text-gray-900 transition-colors">Features</a>
-              <a href="#benefits" className="text-gray-600 hover:text-gray-900 transition-colors">Benefits</a>
-              <a href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors">Pricing</a>
-              <a href="#testimonials" className="text-gray-600 hover:text-gray-900 transition-colors">Testimonials</a>
-              <a href="#contact" className="text-gray-600 hover:text-gray-900 transition-colors">Contact</a>
-              <Link href="/login" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+              {[
+                { id: "features", label: "Features" },
+                { id: "benefits", label: "Benefits" },
+                { id: "testimonials", label: "Testimonials" },
+                { id: "pricing", label: "Pricing" },
+                { id: "contact", label: "Contact" }
+              ].map((item) => (
+                <a
+                  key={item.id}
+                  href={`#${item.id}`}
+                  className={`text-sm font-medium transition-all duration-300 relative py-1 group ${activeSection === item.id ? "text-primary scale-105" : "text-gray-600 hover:text-gray-900"
+                    }`}
+                >
+                  {item.label}
+                  <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-primary rounded-full transition-all duration-300 ${activeSection === item.id ? "w-full opacity-100" : "w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-50"
+                    }`} />
+                </a>
+              ))}
+              <Link href="/login" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium">
                 Get Started
               </Link>
             </div>
@@ -197,11 +315,24 @@ export default function LandingPage() {
           {mobileMenuOpen && (
             <div className="md:hidden py-4 border-t border-gray-200">
               <div className="flex flex-col gap-4">
-                <a href="#features" className="text-gray-600 hover:text-gray-900">Features</a>
-                <a href="#benefits" className="text-gray-600 hover:text-gray-900">Benefits</a>
-                <a href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</a>
-                <a href="#testimonials" className="text-gray-600 hover:text-gray-900">Testimonials</a>
-                <a href="#contact" className="text-gray-600 hover:text-gray-900">Contact</a>
+                {[
+                  { id: "features", label: "Features" },
+                  { id: "benefits", label: "Benefits" },
+                  { id: "testimonials", label: "Testimonials" },
+                  { id: "pricing", label: "Pricing" },
+                  { id: "contact", label: "Contact" }
+                ].map((item) => (
+                  <a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    className={`text-base font-medium transition-all duration-300 flex items-center gap-2 ${activeSection === item.id ? "text-primary translate-x-2" : "text-gray-600"
+                      }`}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {activeSection === item.id && <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />}
+                    {item.label}
+                  </a>
+                ))}
                 <Link href="/login" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-center">
                   Get Started
                 </Link>
@@ -212,109 +343,87 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-32 pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-accent via-primary to-primary-dark overflow-hidden">
-        {/* Abstract Background Shapes */}
+      <section id="demo" className="relative pt-28 pb-20 px-4 sm:px-6 lg:px-8 bg-white overflow-hidden">
+        {/* Subtle background blobs */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] rounded-full bg-white/5 blur-3xl" />
-          <div className="absolute -bottom-[20%] -left-[10%] w-[600px] h-[600px] rounded-full bg-white/5 blur-3xl opacity-50" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-orange-50 blur-3xl opacity-60" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-purple-50 blur-3xl opacity-40" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+
             {/* Left Content */}
-            <div className="text-white">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mb-8 shadow-sm hover:bg-white/20 transition-colors cursor-default">
-                <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                <span className="text-sm font-medium text-white/90">Trusted by 500+ schools worldwide</span>
+            <div>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-full border border-orange-100 mb-8">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-slate-700">Trusted by 500+ schools</span>
               </div>
 
-              <h1 className="text-5xl lg:text-6xl font-extrabold mb-6 leading-tight tracking-tight">
-                Smart Management for <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-pink-200">Modern Preschools</span>
+              {/* Heading */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold mb-6 leading-[1.2] tracking-tight text-slate-900">
+                Complete School<br />
+                Management System for<br />
+                Pre-Primary Education
               </h1>
 
-              <p className="text-lg lg:text-xl text-indigo-100 mb-10 leading-relaxed max-w-xl">
-                Streamline operations, enhance parent communication, and focus on what matters most—child development. All from one powerful, intuitive platform.
+              {/* Description */}
+              <p className="text-base sm:text-lg text-slate-500 mb-10 leading-relaxed max-w-md">
+                Streamline your preschool operations with our comprehensive ERP system. Manage students, teachers, attendance, fees, and more from one powerful platform.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button className="px-8 py-4 bg-white text-primary font-bold rounded-xl shadow-lg hover:bg-indigo-50 hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2 group">
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-4">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all hover:-translate-y-0.5 group"
+                >
                   Start Free Trial
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-                <button className="px-8 py-4 bg-transparent border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/10 hover:border-white/50 transition-all backdrop-blur-sm shadow-sm flex items-center justify-center gap-2">
-                  <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                    <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-1" />
-                  </div>
+                </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-white border border-slate-200 text-slate-800 font-semibold rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+                >
                   Watch Demo
-                </button>
-              </div>
-
-              {/* Trust Indicators */}
-              <div className="mt-12 pt-8 border-t border-white/10 grid grid-cols-2 sm:grid-cols-3 gap-8">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <CheckCircle2 className="w-5 h-5 text-green-400" />
-                    <span className="text-white/80 text-sm font-medium">Free for 14 days</span>
-                  </div>
-                  <div className="text-xs text-indigo-200">No credit card needed</div>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Shield className="w-5 h-5 text-blue-300" />
-                    <span className="text-white/80 text-sm font-medium">Bank-grade Security</span>
-                  </div>
-                  <div className="text-xs text-indigo-200">ISO 27001 Certified</div>
-                </div>
+                </Link>
               </div>
             </div>
 
-            {/* Right Image/Dashboard Preview */}
-            <div className="relative mx-auto lg:ml-auto w-full max-w-lg lg:max-w-none">
-              <div className="relative rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 p-3 shadow-2xl transform rotate-1 hover:rotate-0 transition-all duration-700 ease-out group">
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent rounded-2xl pointer-events-none" />
+            {/* Right — Dashboard Image */}
+            <div className="relative mt-10 lg:mt-0">
+              {/* Image card */}
+              <div className="relative rounded-2xl bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-slate-100 overflow-hidden">
                 <Image
                   src="/dashboard.png"
-                  alt="Pre-Primary ERP Dashboard Interface"
-                  width={800}
-                  height={600}
-                  className="rounded-xl shadow-inner bg-gray-900"
+                  alt="Pre-Primary ERP Dashboard"
+                  width={900}
+                  height={620}
+                  className="w-full h-auto block"
+                  priority
                 />
+              </div>
 
-                {/* Floating Card 1: Stats */}
-                <div className="hidden sm:flex absolute -top-8 -right-8 bg-white p-4 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex-col gap-2 animate-bounce" style={{ animationDuration: '4s' }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-600 rounded-lg flex items-center justify-center text-white">
-                      <DollarSign className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 font-medium">Revenue</div>
-                      <div className="text-lg font-bold text-gray-900">+24%</div>
-                    </div>
-                  </div>
-                </div>
+              {/* Floating Card — 50K+ Students (top-right, OUTSIDE the image card) */}
+              <div
+                className="absolute -top-5 -right-5 bg-secondary rounded-2xl px-6 py-5 shadow-2xl flex flex-col items-center justify-center animate-bounce cursor-default z-10"
+                style={{ animationDuration: '4s', minWidth: '110px' }}
+              >
+                <span className="text-2xl font-black text-white leading-none">50K+</span>
+                <span className="text-xs font-bold text-white/90 mt-1">Students</span>
+              </div>
 
-                {/* Floating Card 2: Active Users */}
-                <div className="hidden sm:flex absolute -bottom-10 -left-10 bg-white p-4 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] items-center gap-4 animate-bounce" style={{ animationDuration: '5s' }}>
-                  <div className="flex -space-x-3">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className={`w-10 h-10 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600`}>
-                        U{i}
-                      </div>
-                    ))}
-                    <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
-                      +40
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">Active Students</div>
-                    <div className="text-xs text-green-600 font-medium flex items-center">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mr-1 animate-pulse" />
-                      Online Now
-                    </div>
-                  </div>
-                </div>
+              {/* Floating Card — 99.9% Uptime (bottom-left, overlapping corner) */}
+              <div
+                className="absolute -bottom-5 left-8 bg-primary rounded-2xl px-7 py-5 shadow-2xl flex flex-col items-center justify-center animate-bounce cursor-default z-10"
+                style={{ animationDuration: '5s', minWidth: '120px' }}
+              >
+                <span className="text-2xl font-black text-white leading-none">99.9%</span>
+                <span className="text-xs font-bold text-white/90 mt-1">Uptime</span>
               </div>
             </div>
+
           </div>
         </div>
       </section>
@@ -380,10 +489,10 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <button className="mt-8 px-8 py-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2 text-lg font-medium">
+              <Link href="/login" className="mt-8 px-8 py-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2 text-lg font-medium inline-flex w-fit">
                 Learn More
                 <ArrowRight className="w-5 h-5" />
-              </button>
+              </Link>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-primary/10 rounded-xl p-6 border border-primary/20">
@@ -412,40 +521,33 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="py-24 px-4 sm:px-6 lg:px-8 bg-slate-50 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+      <section id="testimonials" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
-              Trusted by Leading Institutions
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
+              Loved by School Administrators
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Discover how our partners are transforming their school management experience
+            <p className="text-lg text-gray-500 max-w-xl mx-auto">
+              See what our customers have to say about Pre-Primary ERP
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+          <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-2xl p-8 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group relative">
-                <div className="absolute -top-4 -right-4 w-20 h-20 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
-                <div className="flex gap-1 mb-6">
+              <div key={index} className="bg-white rounded-2xl p-8 border border-gray-200 hover:shadow-lg transition-all duration-300">
+                {/* Stars */}
+                <div className="flex gap-1 mb-5">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
-                <div className="mb-8 relative">
-                  <span className="text-6xl text-gray-100 absolute -top-4 -left-2 font-serif select-none">"</span>
-                  <p className="text-gray-700 leading-relaxed relative z-10 italic">
-                    {testimonial.content}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 pt-6 border-t border-gray-100">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-bold text-lg shadow-inner">
-                    {testimonial.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="font-bold text-gray-900 group-hover:text-primary transition-colors">{testimonial.name}</div>
-                    <div className="text-sm text-gray-500 font-medium">{testimonial.role}</div>
-                  </div>
+                {/* Quote */}
+                <p className="text-gray-700 leading-relaxed mb-6">
+                  &ldquo;{testimonial.content}&rdquo;
+                </p>
+                {/* Author */}
+                <div>
+                  <div className="font-bold text-gray-900">{testimonial.name}</div>
+                  <div className="text-sm text-gray-500 mt-0.5">{testimonial.role}</div>
                 </div>
               </div>
             ))}
@@ -454,7 +556,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      {/* <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
@@ -466,13 +568,12 @@ export default function LandingPage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {pricingPlans.map((plan, index) => (
-              <div 
-                key={index} 
-                className={`rounded-xl p-8 border-2 ${
-                  plan.popular 
-                    ? 'border-orange-500 bg-orange-50 relative' 
-                    : 'border-gray-200 bg-white'
-                }`}
+              <div
+                key={index}
+                className={`rounded-xl p-8 border-2 ${plan.popular
+                  ? 'border-orange-500 bg-orange-50 relative'
+                  : 'border-gray-200 bg-white'
+                  }`}
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-orange-500 text-white text-sm font-medium rounded-full">
@@ -485,13 +586,15 @@ export default function LandingPage() {
                   <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
                   <span className="text-gray-600 ml-2">{plan.period}</span>
                 </div>
-                <button className={`w-full py-3 rounded-lg font-medium transition-colors mb-8 ${
-                  plan.popular
+                <Link
+                  href="/login"
+                  className={`w-full py-3 rounded-lg font-medium transition-colors mb-8 block text-center ${plan.popular
                     ? 'bg-orange-500 text-white hover:bg-orange-600'
                     : 'bg-gray-900 text-white hover:bg-gray-800'
-                }`}>
+                    }`}
+                >
                   Get Started
-                </button>
+                </Link>
                 <div className="space-y-3">
                   {plan.features.map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-3">
@@ -504,10 +607,10 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section> */}
+      </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-accent via-primary to-primary-dark">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-6">
             Ready to Transform Your School Management?
@@ -516,12 +619,12 @@ export default function LandingPage() {
             Join hundreds of schools using Pre-Primary ERP to streamline their operations
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="px-8 py-4 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium">
+            <Link href="/login" className="px-8 py-4 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium inline-block text-center whitespace-nowrap">
               Start Free Trial
-            </button>
-            <button className="px-8 py-4 bg-transparent text-white rounded-lg border-2 border-white hover:bg-white/10 transition-colors text-lg font-medium">
+            </Link>
+            <Link href="/login" className="px-8 py-4 bg-transparent text-white rounded-lg border-2 border-white hover:bg-white/10 transition-colors text-lg font-medium inline-block text-center whitespace-nowrap">
               Schedule Demo
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -537,11 +640,17 @@ export default function LandingPage() {
           </div>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleContactSubmit}>
+                {/* Prevent Captcha from FormSubmit when using AJAX */}
+                <input type="hidden" name="_captcha" value="false" />
+                <input type="hidden" name="_subject" value="New Inquiry from Pre-Primary ERP Website!" />
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
                   <input
                     type="text"
+                    name="Name"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Your name"
                   />
@@ -550,6 +659,8 @@ export default function LandingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                   <input
                     type="email"
+                    name="Email"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="your@email.com"
                   />
@@ -558,6 +669,8 @@ export default function LandingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">School Name</label>
                   <input
                     type="text"
+                    name="School Name"
+                    required
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Your school name"
                   />
@@ -566,12 +679,18 @@ export default function LandingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
                   <textarea
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    name="Message"
+                    required
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary min-h-[120px]"
                     placeholder="Tell us about your requirements"
                   />
                 </div>
-                <button className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium">
-                  Send Message
+                <button
+                  type="submit"
+                  disabled={isSubmittingContact}
+                  className="w-full flex items-center justify-center py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium text-center disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingContact ? "Sending..." : "Send Message"}
                 </button>
               </form>
             </div>
@@ -581,15 +700,15 @@ export default function LandingPage() {
                 <div className="space-y-4">
                   <div>
                     <div className="text-sm text-gray-500 mb-1">Email</div>
-                    <div className="text-gray-900">info@preprimaryerp.com</div>
+                    <div className="text-gray-900">sales@xpertance.in</div>
                   </div>
                   <div>
                     <div className="text-sm text-gray-500 mb-1">Phone</div>
-                    <div className="text-gray-900">+91 98765 43210</div>
+                    <div className="text-gray-900">+91 76203 01874</div>
                   </div>
                   <div>
                     <div className="text-sm text-gray-500 mb-1">Address</div>
-                    <div className="text-gray-900">Mumbai, Maharashtra, India</div>
+                    <div className="text-gray-900 leading-relaxed">311, Innonsh Technologies, One Mall (Reliance Shop), Bhondve Vasti, Aundh-Ravet, BRTS Road, Ravet. 412101</div>
                   </div>
                 </div>
               </div>
@@ -598,10 +717,7 @@ export default function LandingPage() {
                 <p className="text-gray-600 mb-4">
                   Our support team is available 24/7 to assist you with any questions
                 </p>
-                <button className="text-primary-dark font-medium flex items-center gap-2">
-                  Visit Help Center
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+
               </div>
             </div>
           </div>
@@ -615,7 +731,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div className="lg:col-span-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl flex items-center justify-center shadow-md">
                   <GraduationCap className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -631,30 +747,29 @@ export default function LandingPage() {
             <div>
               <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Product</h4>
               <ul className="space-y-2 text-slate-400 text-sm">
-                <li><a href="#" className="hover:text-primary transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Live Demo</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Product Roadmap</a></li>
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><a href="#demo" className="hover:text-white transition-colors">Live Demo</a></li>
+                <li><a href="#benefits" className="hover:text-white transition-colors">Product Roadmap</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Resources</h4>
               <ul className="space-y-2 text-slate-400 text-sm">
-                <li><a href="#" className="hover:text-primary transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">API Documentation</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Community Forum</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Webinars & Events</a></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Help Center</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">API Documentation</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Community Forum</Link></li>
+                <li><Link href="/login" className="hover:text-white transition-colors">Webinars & Events</Link></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-bold text-white mb-4 text-sm uppercase tracking-wider">Company</h4>
               <ul className="space-y-2 text-slate-400 text-sm">
-                <li><a href="#" className="hover:text-primary transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Press & Media</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Contact Us</a></li>
+                <li><a href="#features" className="hover:text-white transition-colors">About Us</a></li>
+                <li><button onClick={(e) => { e.preventDefault(); setIsCareersModalOpen(true); }} className="hover:text-white transition-colors cursor-pointer text-left">Careers</button></li>
+                <li><a href="#contact" className="hover:text-white transition-colors">Contact Us</a></li>
               </ul>
             </div>
           </div>
@@ -672,17 +787,101 @@ export default function LandingPage() {
             </div>
 
             <div className="flex gap-4 text-slate-400">
-              {/* Social Icons */}
-              {[1, 2, 3, 4].map((i) => (
-                <a key={i} href="#" className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-all hover:-translate-y-1">
-                  <Star className="w-4 h-4" />
-                </a>
-              ))}
+              {/* No social icons */}
             </div>
           </div>
         </div>
       </footer>
 
+      {/* Careers Modal */}
+      {isCareersModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-gray-50/50">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">Join Our Team</h3>
+                <p className="text-gray-500 text-sm mt-1">We aren't actively hiring, but we'd love to have your profile on file.</p>
+              </div>
+              <button
+                onClick={() => { setIsCareersModalOpen(false); setResumeName(""); }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto custom-scrollbar">
+              <form className="space-y-5" onSubmit={handleCareerSubmit}>
+                {/* Prevent Captcha from FormSubmit when using AJAX */}
+                <input type="hidden" name="_captcha" value="false" />
+                <input type="hidden" name="_subject" value="New Career Application Submission!" />
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    name="Full Name"
+                    required
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    placeholder="John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Highest Education</label>
+                  <input
+                    type="text"
+                    name="Education"
+                    required
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    placeholder="e.g. B.Tech in Computer Science"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Key Skills</label>
+                  <textarea
+                    rows={3}
+                    name="Key Skills"
+                    required
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all resize-none"
+                    placeholder="e.g. React, Node.js, Design, Management..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Resume / CV</label>
+                  <label className="block border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:bg-gray-50 hover:border-primary/50 transition-colors cursor-pointer group relative">
+                    <UploadCloud className="w-8 h-8 text-gray-400 mx-auto mb-2 group-hover:text-primary transition-colors" />
+                    <span className="block text-sm text-gray-600 font-medium">
+                      {resumeName ? <span className="text-primary font-bold">{resumeName}</span> : "Click to upload or drag and drop"}
+                    </span>
+                    <span className="block text-xs text-gray-400 mt-1">PDF, DOCX up to 5MB</span>
+                    <input
+                      type="file"
+                      name="attachment"
+                      accept=".pdf,.doc,.docx"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      onChange={(e) => setResumeName(e.target.files?.[0]?.name || "")}
+                      required
+                    />
+                  </label>
+                </div>
+
+                <div className="pt-4 border-t border-gray-100">
+                  <button
+                    type="submit"
+                    disabled={isSubmittingForm}
+                    className="w-full flex items-center justify-center py-3 bg-gradient-to-r from-orange-400 to-pink-500 text-white font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingForm ? "Submitting..." : "Submit Application"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
