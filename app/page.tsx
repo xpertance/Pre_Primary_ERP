@@ -278,7 +278,7 @@ export default function LandingPage() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-10">
               {[
                 { id: "features", label: "Features" },
                 { id: "benefits", label: "Benefits" },
