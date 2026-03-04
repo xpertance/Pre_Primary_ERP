@@ -89,7 +89,7 @@ export default function Navbar({
           type: "teacher",
           displayName: teacher.name,
         })),
-        ...(classesData.data || []).map((cls: any) => ({
+        ...(classesData.classes || classesData.data || []).map((cls: any) => ({
           ...cls,
           type: "class",
           displayName: `${cls.name} - ${cls.section}`,
@@ -261,10 +261,14 @@ export default function Navbar({
                     <p className="text-xs text-gray-400 mt-1">1 day ago</p>
                   </div>
                 </div>
-                <div className="px-4 py-2.5 border-t border-gray-200 bg-gray-50">
-                  <button className="text-xs font-medium text-orange-600 hover:text-orange-700">
+                <div className="px-4 py-2.5 border-t border-gray-200 bg-gray-50 flex justify-center">
+                  <Link
+                    href="/dashboard/notifications"
+                    className="text-xs font-medium text-orange-600 hover:text-orange-700"
+                    onClick={() => setNotificationOpen(false)}
+                  >
                     View all notifications
-                  </button>
+                  </Link>
                 </div>
               </div>
             )}

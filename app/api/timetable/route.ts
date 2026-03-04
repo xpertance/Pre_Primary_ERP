@@ -38,20 +38,10 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = TimetableCreateZ.parse(body);
 
-    // Validate Teacher Subject
+    // Verify teacher exists
     const teacher = await import("@/models/Teacher").then((mod) => mod.default.findById(parsed.teacherId));
     if (!teacher) {
       return NextResponse.json({ success: false, error: "Teacher not found" }, { status: 404 });
-    }
-
-    if (!teacher.subjects?.includes(parsed.subject)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Verification Failed: ${teacher.name} is not assigned to teach ${parsed.subject}. Please update the teacher's profile first.`,
-        },
-        { status: 400 }
-      );
     }
 
     const created = await Timetable.create(parsed);

@@ -74,6 +74,7 @@ interface FeeTransaction {
     }>;
     createdAt: string;
     dueDate?: string;
+    note?: string;
     updatedAt: string;
 }
 
@@ -267,10 +268,12 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
     const handleOpenEditModal = (transaction: FeeTransaction) => {
         setEditingTransactionId(transaction._id);
         setEditTransactionData({
-            amount: transaction.amountDue, // Use amountDue as base, but simplified
-            head: transaction.items.map(i => i.head).join(", "), // Simplified for now
-            dueDate: transaction.dueDate ? new Date(transaction.dueDate).toISOString().split("T")[0] : new Date(transaction.createdAt).toISOString().split("T")[0],
-            note: "note" in transaction ? (transaction as any).note || "" : "",
+            amount: transaction.amountDue,
+            head: transaction.items.map(i => i.head).join(", "),
+            dueDate: transaction.dueDate
+                ? new Date(transaction.dueDate).toISOString().split("T")[0]
+                : new Date(transaction.createdAt).toISOString().split("T")[0],
+            note: transaction.note || "",
         });
         setShowEditModal(true);
     };
@@ -307,61 +310,201 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
     const handleDownloadReceipt = (transaction: FeeTransaction) => {
         if (!studentData) return;
         const student = studentData.student;
-        const doc = new jsPDF();
+        const doc = new jsPDF({ unit: "mm", format: "a4" });
+        const pageWidth = doc.internal.pageSize.getWidth(); // 210mm
+        const margin = 14;
+        const contentWidth = pageWidth - margin * 2; // 182mm
 
-        // Header
-        doc.setFontSize(22);
-        doc.setTextColor(41, 128, 185);
-        doc.text("Kidz Zone Pre Primary School", 105, 20, { align: "center" });
+        // jsPDF built-in fonts (Helvetica etc.) do NOT support the ₹ Unicode character.
+        // Using a plain ASCII formatter instead to avoid garbled output.
+        const pdfCurrency = (amount: number) =>
+            "Rs. " + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(amount);
 
-        doc.setFontSize(12);
-        doc.setTextColor(100);
-        doc.text("Fee Receipt", 105, 30, { align: "center" });
+        // ── Background watermark area (subtle) ──
+        doc.setFillColor(248, 250, 252);
+        doc.rect(0, 0, pageWidth, 297, "F");
 
-        doc.setDrawColor(200);
-        doc.line(10, 35, 200, 35);
+        // ── Header Band ──
+        doc.setFillColor(37, 99, 235); // blue-600
+        doc.rect(0, 0, pageWidth, 38, "F");
 
-        // Student Details
+        // School name
+        doc.setFontSize(18);
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.text("Pre-Primary ERP", margin, 14);
+
+        // Receipt label on the right
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(186, 214, 255);
+        doc.text("FEE RECEIPT", pageWidth - margin, 14, { align: "right" });
+
         doc.setFontSize(10);
-        doc.setTextColor(0);
-        doc.text(`Receipt Date: ${new Date().toLocaleDateString()}`, 150, 45);
-        doc.text(`Receipt No: ${transaction._id.substring(0, 8).toUpperCase()}`, 150, 50);
+        doc.setTextColor(255, 255, 255);
+        doc.text("School Management System", margin, 22);
 
-        doc.text(`Student Name: ${student.firstName} ${student.lastName || ""}`, 15, 45);
-        doc.text(`Admission No: ${student.admissionNo}`, 15, 50);
-        doc.text(`Class: ${student.classId?.name || ""} ${student.classId?.section || ""}`, 15, 55);
+        // Receipt number + date on right
+        const receiptNo = `REC-${transaction._id.substring(0, 8).toUpperCase()}`;
+        doc.setFontSize(9);
+        doc.setTextColor(186, 214, 255);
+        doc.text(`Receipt No: ${receiptNo}`, pageWidth - margin, 22, { align: "right" });
+        doc.text(`Date: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`, pageWidth - margin, 30, { align: "right" });
 
-        // Payment Details Table
-        const tableData = transaction.items.map(item => [item.head, formatCurrency(item.amount)]);
+        // ── Student Info Section ──
+        const infoY = 48;
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(margin, infoY - 4, contentWidth, 36, 3, 3, "F");
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(margin, infoY - 4, contentWidth, 36, 3, 3, "S");
 
-        // Add totals
-        tableData.push(["", ""]);
-        tableData.push(["Total Amount", formatCurrency(transaction.items.reduce((sum, item) => sum + item.amount, 0))]);
-        tableData.push(["Fine", formatCurrency(transaction.fineAmount)]);
-        tableData.push(["Total Paid", formatCurrency(transaction.amountPaid)]);
-        tableData.push(["Balance Due", formatCurrency(transaction.amountDue - transaction.amountPaid)]);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(100, 116, 139); // slate-500
+        doc.text("STUDENT", margin + 4, infoY + 2);
+
+        doc.setFontSize(13);
+        doc.setTextColor(15, 23, 42); // slate-900
+        doc.text(`${student.firstName} ${student.lastName || ""}`, margin + 4, infoY + 12);
+
+        // Mini pills row
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(71, 85, 105);
+        const admText = `Adm No: ${student.admissionNo || "N/A"}`;
+        const classText = student.classId ? `Class: ${student.classId.name} - ${student.classId.section}` : "";
+        const txDateText = `Transaction: ${new Date(transaction.createdAt).toLocaleDateString("en-IN")}`;
+        const dueDateText = transaction.dueDate ? `Due: ${new Date(transaction.dueDate).toLocaleDateString("en-IN")}` : "";
+
+        doc.text(admText, margin + 4, infoY + 22);
+        if (classText) doc.text(classText, margin + 58, infoY + 22);
+        doc.text(txDateText, margin + 4, infoY + 29);
+        if (dueDateText) doc.text(dueDateText, margin + 58, infoY + 29);
+
+        // Payment status badge (top right of the info card)
+        const statusColors: Record<string, [number, number, number]> = {
+            paid: [22, 163, 74],   // green-600
+            partial: [217, 119, 6],   // amber-600
+            due: [220, 38, 38],  // red-600
+        };
+        const [sr, sg, sb] = statusColors[transaction.status] || [100, 116, 139];
+        doc.setFillColor(sr, sg, sb);
+        const statusLabel = transaction.status.toUpperCase();
+        const badgeW = 28;
+        doc.roundedRect(pageWidth - margin - badgeW, infoY - 1, badgeW, 10, 2, 2, "F");
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        doc.text(statusLabel, pageWidth - margin - badgeW / 2, infoY + 5.5, { align: "center" });
+
+        // ── Fee Items Table ──
+        const tableY = infoY + 40;
+        const tableBody = transaction.items.map(item => [
+            item.head,
+            pdfCurrency(item.amount),
+        ]);
 
         autoTable(doc, {
-            startY: 65,
-            head: [["Fee Head", "Amount"]],
-            body: tableData,
-            theme: 'grid',
-            headStyles: { fillColor: [41, 128, 185] },
+            startY: tableY,
+            head: [["Fee Head / Description", "Amount (Rs.)"]],
+            body: tableBody,
+            theme: "striped",
+            margin: { left: margin, right: margin },
+            styles: {
+                fontSize: 9,
+                cellPadding: { top: 4, bottom: 4, left: 5, right: 5 },
+                textColor: [15, 23, 42],
+                lineColor: [226, 232, 240],
+                lineWidth: 0.2,
+            },
+            headStyles: {
+                fillColor: [37, 99, 235],
+                textColor: [255, 255, 255],
+                fontStyle: "bold",
+                fontSize: 9,
+            },
+            alternateRowStyles: {
+                fillColor: [241, 245, 249],
+            },
             columnStyles: {
-                0: { cellWidth: 120 },
-                1: { cellWidth: 60, halign: 'right' }
-            }
+                0: { cellWidth: contentWidth * 0.70 },
+                1: { cellWidth: contentWidth * 0.30, halign: "right" },
+            },
         });
 
-        // Footer
-        const finalY = (doc as any).lastAutoTable.finalY + 20;
-        doc.text("Authorized Signatory", 150, finalY);
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text("This is a computer generated receipt.", 105, finalY + 20, { align: "center" });
+        // ── Summary Box ──
+        const summaryY = (doc as any).lastAutoTable.finalY + 6;
+        const summaryBoxW = 80;
+        const summaryBoxX = pageWidth - margin - summaryBoxW;
 
-        doc.save(`Receipt_${student.firstName}_${new Date().toISOString().split('T')[0]}.pdf`);
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(summaryBoxX, summaryY, summaryBoxW, 52, 3, 3, "F");
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(summaryBoxX, summaryY, summaryBoxW, 52, 3, 3, "S");
+
+        const summaryRows: [string, string, boolean][] = [
+            ["Subtotal", pdfCurrency(transaction.items.reduce((s, i) => s + i.amount, 0)), false],
+            ["Fine / Penalty", pdfCurrency(transaction.fineAmount), false],
+            ["Total Due", pdfCurrency(transaction.amountDue), false],
+            ["Amount Paid", pdfCurrency(transaction.amountPaid), true],
+            ["Balance", pdfCurrency(transaction.amountDue - transaction.amountPaid), false],
+        ];
+
+        doc.setFont("helvetica", "normal");
+        summaryRows.forEach(([label, value, highlight], i) => {
+            const rowY = summaryY + 8 + i * 9;
+            if (highlight) {
+                doc.setFillColor(240, 253, 244); // green tint
+                doc.rect(summaryBoxX + 1, rowY - 5, summaryBoxW - 2, 9, "F");
+            }
+            doc.setFontSize(8.5);
+            doc.setTextColor(highlight ? 22 : 71, highlight ? 163 : 85, highlight ? 74 : 105);
+            doc.setFont("helvetica", highlight ? "bold" : "normal");
+            doc.text(label, summaryBoxX + 4, rowY);
+            doc.text(value, summaryBoxX + summaryBoxW - 4, rowY, { align: "right" });
+        });
+
+        // Divider line above Balance
+        const divY = summaryY + 8 + 3 * 9 - 6;
+        doc.setDrawColor(226, 232, 240);
+        doc.line(summaryBoxX + 3, divY, summaryBoxX + summaryBoxW - 3, divY);
+
+        // ── Note block (if any) ──
+        const noteY = summaryY + 6;
+        const noteText = (transaction as any).note;
+        if (noteText) {
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Note: ${noteText}`, margin, noteY, { maxWidth: summaryBoxX - margin - 6 });
+        }
+
+        // ── Signature line ──
+        const sigY = summaryY + 62;
+        doc.setDrawColor(148, 163, 184);
+        doc.setLineWidth(0.4);
+        doc.line(pageWidth - margin - 55, sigY, pageWidth - margin, sigY);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 116, 139);
+        doc.text("Authorized Signatory", pageWidth - margin - 27.5, sigY + 5, { align: "center" });
+
+        // ── Footer strip ──
+        const footerY = 280;
+        doc.setFillColor(37, 99, 235);
+        doc.setFillColor(241, 245, 249);
+        doc.rect(0, footerY, pageWidth, 17, "F");
+        doc.setFontSize(7.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text("This is a computer-generated receipt and does not require a physical signature.", pageWidth / 2, footerY + 6, { align: "center" });
+        doc.text(`Generated on ${new Date().toLocaleString("en-IN")}   |   ${receiptNo}`, pageWidth / 2, footerY + 12, { align: "center" });
+
+        // ── Save ──
+        doc.save(`Fee_Receipt_${student.firstName}_${receiptNo}.pdf`);
     };
+
 
     if (loading) {
         return (

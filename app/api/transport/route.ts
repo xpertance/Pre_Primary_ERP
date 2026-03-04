@@ -62,16 +62,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { routeName, routeCode, description, driverId, driverName, driverPhone, vehicleNumber, vehicleType, capacity, stops } = body;
-
-    if (!routeName) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const route = new TransportRoute({
+    const {
       routeName,
       routeCode,
       description,
@@ -82,7 +73,35 @@ export async function POST(req: Request) {
       vehicleType,
       capacity,
       stops,
-    });
+      students,
+      status,
+      isActive
+    } = body;
+
+    if (!routeName) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    const routeData = {
+      routeName,
+      routeCode: routeCode?.trim() || undefined,
+      description,
+      driverId: driverId && driverId !== "" ? driverId : null,
+      driverName,
+      driverPhone,
+      vehicleNumber,
+      vehicleType,
+      capacity,
+      stops,
+      students: students || [],
+      status: status || "active",
+      isActive: isActive !== undefined ? isActive : true,
+    };
+
+    const route = new TransportRoute(routeData);
 
     await route.save();
     await route.populate("driverId", "name phone email");
@@ -133,6 +152,10 @@ export async function PUT(req: Request) {
         { status: 400 }
       );
     }
+
+    // Clean up empty strings for IDs and unique fields
+    if (updateData.driverId === "") updateData.driverId = null;
+    if (updateData.routeCode === "") updateData.routeCode = undefined;
 
     const route = await TransportRoute.findByIdAndUpdate(id, updateData, {
       new: true,

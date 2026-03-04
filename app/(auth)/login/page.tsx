@@ -3,7 +3,7 @@
 import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { User, Lock, BookOpen, Users, GraduationCap, Baby } from "lucide-react";
+import { User, Lock, BookOpen, Users, GraduationCap, Baby, Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
 
   const slides = [
     {
@@ -209,12 +210,20 @@ export default function LoginPage() {
                 </div>
                 <input
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   value={form.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                   placeholder="Enter password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
 
@@ -230,7 +239,7 @@ export default function LoginPage() {
                 <span className="text-sm text-gray-700">Remember me</span>
               </label>
               <a
-                href="/auth/forgot-password"
+                href="/forgot-password"
                 className="text-sm text-primary hover:text-primary-dark transition-colors"
               >
                 Forgot password?
@@ -250,9 +259,9 @@ export default function LoginPage() {
           {/* Sign Up Link */}
           <div className="mt-6 text-center">
             <p className="text-gray-600 text-sm">
-              No account?{" "}
-              <a href="/auth/signup" className="text-primary hover:text-primary-dark font-medium transition-colors">
-                Sign up
+              Don't have an account?{" "}
+              <a href="/#contact" className="text-primary hover:text-primary-dark font-medium transition-colors">
+                Contact Company
               </a>
             </p>
           </div>

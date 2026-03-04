@@ -89,6 +89,8 @@ export async function GET(req: NextRequest) {
                         fineAmount: t.fineAmount,
                         status: t.status,
                         items: t.items,
+                        dueDate: t.dueDate,
+                        note: t.note || "",
                         createdAt: t.createdAt,
                         updatedAt: t.updatedAt,
                     })),

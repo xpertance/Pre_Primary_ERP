@@ -62,6 +62,8 @@ export default function TeacherManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [selectedClass, setSelectedClass] = useState("");
+
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -89,7 +91,7 @@ export default function TeacherManagement() {
   const fetchTeachers = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/teachers");
+      const res = await fetch("/api/teachers?limit=500");
       const data = await res.json();
       setTeachers(data.teachers || []);
     } catch (error) {
@@ -244,11 +246,21 @@ export default function TeacherManagement() {
     }
   };
 
-  const filteredTeachers = teachers.filter(
-    (teacher) =>
-      teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      teacher.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTeachers = teachers.filter((teacher) => {
+    const matchesSearch =
+      (teacher.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (teacher.email || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesClass =
+      !selectedClass ||
+      (teacher.classes || []).some((cls) => {
+        const classId = typeof cls.classId === "object" ? (cls.classId as any)._id : cls.classId;
+        return classId === selectedClass;
+      });
+
+    return matchesSearch && matchesClass;
+  });
+
 
   const teachersWithSubjects = teachers.filter(
     (t) => t.subjects && t.subjects.length > 0
@@ -384,7 +396,6 @@ export default function TeacherManagement() {
           </button>
         </div>
 
-        {/* Search and Filters */}
         <div className="mb-6 flex flex-col md:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -396,36 +407,59 @@ export default function TeacherManagement() {
               className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all">
-            <Filter className="w-4 h-4" />
-            <span className="font-medium">Filters</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedClass}
+              onChange={(e) => setSelectedClass(e.target.value)}
+              className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm min-w-[180px]"
+            >
+              <option value="">All Classes</option>
+              {classes.map((cls) => (
+                <option key={cls._id} value={cls._id}>
+                  {cls.name} — {cls.section}
+                </option>
+              ))}
+            </select>
+            {selectedClass && (
+              <button
+                onClick={() => setSelectedClass("")}
+                className="px-3 py-2.5 text-xs text-gray-500 border border-gray-100 rounded-lg hover:bg-gray-50 transition-all"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
+
+
         {/* Table */}
-        <Table
-          columns={columns}
-          data={filteredTeachers}
-          loading={loading}
-          actions={(row) => (
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleEditTeacher(row as Teacher)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                Edit
-              </button>
-              <button
-                onClick={() => handleDeleteTeacher((row as Teacher)._id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </button>
-            </div>
-          )}
-        />
+        <div className="max-h-[calc(100vh-340px)] overflow-y-auto custom-scrollbar">
+          <Table
+            columns={columns}
+            data={filteredTeachers}
+            loading={loading}
+            actions={(row) => (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEditTeacher(row as Teacher)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteTeacher((row as Teacher)._id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+              </div>
+            )}
+          />
+        </div>
+
       </div>
 
       {/* Add/Edit Modal */}

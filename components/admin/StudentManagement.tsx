@@ -341,7 +341,8 @@ export default function StudentManagement() {
         setSelectedHeads({});
         fetchStudents();
       } else {
-        showToast.error("Failed to save student");
+        const errData = await res.json().catch(() => ({}));
+        showToast.error(errData.error || "Failed to save student");
       }
     } catch (error) {
       showToast.error("An error occurred");
@@ -590,37 +591,40 @@ export default function StudentManagement() {
         </div>
 
         {/* Table */}
-        <Table
-          columns={columns}
-          data={filteredStudents}
-          loading={loading}
-          actions={(row) => (
-            <div className="flex gap-2">
-              <button
-                onClick={() => router.push(`/dashboard/fees/${(row as Student)._id}`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 rounded-lg hover:bg-green-100 transition-all text-sm font-medium"
-                title="View Fee Details"
-              >
-                <Eye className="w-3.5 h-3.5" />
-                Details
-              </button>
-              <button
-                onClick={() => handleEditStudent(row as Student)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-                Edit
-              </button>
-              <button
-                onClick={() => handleDeleteStudent((row as Student)._id)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </button>
-            </div>
-          )}
-        />
+        <div className="max-h-[calc(100vh-340px)] overflow-y-auto custom-scrollbar">
+          <Table
+            columns={columns}
+            data={filteredStudents}
+            loading={loading}
+            actions={(row) => (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => router.push(`/dashboard/fees/${(row as Student)._id}`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 rounded-lg hover:bg-green-100 transition-all text-sm font-medium"
+                  title="View Fee Details"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Details
+                </button>
+                <button
+                  onClick={() => handleEditStudent(row as Student)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteStudent((row as Student)._id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+              </div>
+            )}
+          />
+        </div>
+
       </div>
 
       {/* Add/Edit Modal */}
@@ -649,7 +653,7 @@ export default function StudentManagement() {
           </>
         }
       >
-        <div className="space-y-6 mt-4 max-h-[60vh] overflow-y-auto pr-2">
+        <div className="space-y-6 mt-4 pr-2 pb-10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center">
               {editingStudent ? (
@@ -933,9 +937,13 @@ export default function StudentManagement() {
                     />
                     <input
                       type="tel"
-                      placeholder="Phone Number"
+                      placeholder="10-digit Phone Number"
                       value={parent.phone}
-                      onChange={(e) => handleParentChange(index, "phone", e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^\d]/g, '');
+                        handleParentChange(index, "phone", value);
+                      }}
+                      maxLength={10}
                       className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
                     />
                     <input
@@ -1006,7 +1014,7 @@ export default function StudentManagement() {
                   Medical Notes
                 </label>
                 <textarea
-                  value={formData?.medical?.notes}
+                  value={formData?.medical?.notes || ""}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -1031,7 +1039,7 @@ export default function StudentManagement() {
               <input
                 type="text"
                 placeholder="Authorized Pickup Person"
-                value={formData?.pickupInfo?.pickupPerson}
+                value={formData?.pickupInfo?.pickupPerson || ""}
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
@@ -1042,14 +1050,16 @@ export default function StudentManagement() {
               />
               <input
                 type="tel"
-                placeholder="Pickup Person Phone"
+                placeholder="10-digit Pickup Person Phone"
                 value={formData?.pickupInfo?.pickupPhone}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^\d]/g, '');
                   setFormData((prev) => ({
                     ...prev,
-                    pickupInfo: { ...prev.pickupInfo, pickupPhone: e.target.value },
-                  }))
-                }
+                    pickupInfo: { ...prev.pickupInfo, pickupPhone: value },
+                  }));
+                }}
+                maxLength={10}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-sm"
               />
             </div>
