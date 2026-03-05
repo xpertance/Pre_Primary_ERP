@@ -80,7 +80,8 @@ export default function StudentDashboard() {
       setLoading(true);
 
       // Fetch current student info
-      const userRes = await fetch("/api/auth/me");
+      const userRes = await fetch("/api/auth/profile");
+      if (!userRes.ok) throw new Error(`userRes failed: ${await userRes.text()}`);
       const userData = await userRes.json();
       setStudentInfo(userData.user);
 
@@ -95,7 +96,7 @@ export default function StudentDashboard() {
       const attendanceRes = await fetch(`/api/attendance?studentId=${studentId}`);
       const attendanceData = await attendanceRes.json();
       const attendanceRecords = attendanceData.data || [];
-      
+
       const presentCount = attendanceRecords.filter((a: any) => a.status === "present").length;
       const totalCount = attendanceRecords.length;
       const attendancePercentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
@@ -111,7 +112,7 @@ export default function StudentDashboard() {
       const examRes = await fetch(`/api/exams?studentId=${studentId}`);
       const examData = await examRes.json();
       const allExams = examData.exams || [];
-      const upcomingExams = allExams.filter((e: any) => 
+      const upcomingExams = allExams.filter((e: any) =>
         new Date(e.startDate) > new Date() && e.status === "scheduled"
       );
 
@@ -178,9 +179,9 @@ export default function StudentDashboard() {
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-US", { 
-      month: "short", 
-      day: "numeric" 
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric"
     });
   };
 
@@ -218,10 +219,10 @@ export default function StudentDashboard() {
           <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg">
             <Calendar className="w-5 h-5 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">
-              {new Date().toLocaleDateString("en-US", { 
-                weekday: "long", 
-                month: "long", 
-                day: "numeric" 
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric"
               })}
             </span>
           </div>
@@ -432,7 +433,7 @@ export default function StudentDashboard() {
                   <span className="text-pink-900 font-bold">{stats.attendancePercentage}%</span>
                 </div>
                 <div className="w-full bg-pink-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-pink-500 h-3 rounded-full transition-all"
                     style={{ width: `${stats.attendancePercentage}%` }}
                   ></div>
@@ -446,10 +447,10 @@ export default function StudentDashboard() {
                   </span>
                 </div>
                 <div className="w-full bg-pink-200 rounded-full h-3">
-                  <div 
+                  <div
                     className="bg-pink-500 h-3 rounded-full transition-all"
-                    style={{ 
-                      width: `${(stats.completedAssignments / (stats.completedAssignments + stats.pendingAssignments || 1)) * 100}%` 
+                    style={{
+                      width: `${(stats.completedAssignments / (stats.completedAssignments + stats.pendingAssignments || 1)) * 100}%`
                     }}
                   ></div>
                 </div>
@@ -471,9 +472,9 @@ export default function StudentDashboard() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-800">{activity.message}</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {new Date(activity.timestamp).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                        {new Date(activity.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}
                       </p>
                     </div>

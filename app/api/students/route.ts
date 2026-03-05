@@ -19,6 +19,10 @@ export async function GET(req: Request) {
   // optional filter by classId, name, etc.
   const filter: any = {};
   if (url.searchParams.get("classId")) filter.classId = url.searchParams.get("classId");
+  if (url.searchParams.get("classIds")) {
+    const ids = url.searchParams.get("classIds")!.split(",").filter(Boolean);
+    if (ids.length > 0) filter.classId = { $in: ids };
+  }
   if (url.searchParams.get("q")) {
     const q = url.searchParams.get("q");
     filter.$or = [
@@ -103,7 +107,7 @@ export async function POST(req: Request) {
           if (p.phone === "" || p.phone === undefined) delete p.phone;
         }
         return p;
-      });
+      }).filter((p: any) => p && (p.name || p.phone || p.email || p.relation));
     }
 
     const parsed = StudentCreateZ.parse(cleanBody);
@@ -137,11 +141,16 @@ export async function POST(req: Request) {
     // No automatic fee creation here to avoid duplicate transactions.
 
     return NextResponse.json({ success: true, student: created }, { status: 201 });
-  } catch (err: unknown) {
+  } catch (err: any) {
     const error = err instanceof Error ? err : new Error(String(err));
-    console.error("Error creating student:", error);
+    console.error("Error creating student:", err);
 
     let errorMessage = error.message || "Invalid data";
+
+    // Check if it's a Zod error
+    if (err.issues) {
+      errorMessage = err.issues.map((i: any) => `${i.path.join('.')}: ${i.message}`).join(', ');
+    }
 
     // Handle MongoDB duplicate key errors
     if (error.message?.includes("duplicate key")) {
@@ -156,9 +165,12 @@ export async function POST(req: Request) {
 
     // Handle validation errors
     if (err instanceof Error && 'errors' in err) {
-      const validationErrors = (err as any).errors;
-      errorMessage = Object.values(validationErrors)
-        .map((e: any) => e.message || String(e))
+      const validationErrors = (err as any).errors as Array<any>;
+      errorMessage = validationErrors
+        .map((e: any) => {
+          const field = e.path ? e.path.join('.') : "Field";
+          return `${field}: ${e.message || String(e)}`;
+        })
         .join(", ");
     }
 

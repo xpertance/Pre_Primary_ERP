@@ -56,59 +56,70 @@ export default function Sidebar({
   // lg:translate-x-0 class ensures it's always visible on desktop
   const visible = isOpen;
 
+  const getDashboardPath = () => {
+    switch (user?.role) {
+      case "teacher": return "/teacher-dashboard";
+      case "student": return "/student-dashboard";
+      case "parent": return "/parent-dashboard";
+      default: return "/dashboard";
+    }
+  };
+
+  const basePath = getDashboardPath();
+
   const menuList: MenuItem[] = [
     {
       name: "Dashboard",
-      path: "/dashboard",
+      path: basePath,
       module: "dashboard",
       icon: LayoutDashboard,
       color: "orange",
     },
     {
       name: "Classes",
-      path: "/dashboard/classes",
-      module: "students",
+      path: `${basePath}/classes`,
+      module: "classes",
       icon: House,
       color: "pink",
     },
     {
       name: "Students",
-      path: "/dashboard/students",
+      path: `${basePath}/students`,
       module: "students",
       icon: Users,
       color: "rose",
     },
     {
       name: "Teachers",
-      path: "/dashboard/teachers",
+      path: `${basePath}/teachers`,
       module: "teachers",
       icon: GraduationCap,
       color: "purple",
     },
     {
       name: "Attendance",
-      path: "/dashboard/attendance",
+      path: `${basePath}/attendance`,
       module: "attendance",
       icon: ClipboardCheck,
       color: "amber",
     },
     {
       name: "Fees",
-      path: "/dashboard/fees",
+      path: `${basePath}/fees`,
       module: "fees",
       icon: DollarSign,
       color: "green",
     },
     {
       name: "Timetable",
-      path: "/dashboard/timetable",
+      path: `${basePath}/timetable`,
       module: "timetable",
       icon: Calendar,
       color: "fuchsia",
     },
     {
       name: "Exams",
-      path: "/dashboard/exams",
+      path: `${basePath}/exams`,
       module: "exams",
       icon: FileText,
       color: "indigo",
@@ -117,7 +128,7 @@ export default function Sidebar({
     /*
     {
       name: "Notifications",
-      path: "/dashboard/notifications",
+      path: `${basePath}/notifications`,
       module: "notifications",
       icon: Bell,
       color: "red",
@@ -126,7 +137,7 @@ export default function Sidebar({
     /* Log Activity hidden for small school client 
     {
       name: "Log Activity",
-      path: "/dashboard/log-activity",
+      path: `${basePath}/log-activity`,
       module: "log-activity",
       icon: Clock,
       color: "red",
@@ -134,14 +145,14 @@ export default function Sidebar({
     */
     {
       name: "Events",
-      path: "/dashboard/events",
+      path: `${basePath}/events`,
       module: "events",
       icon: PartyPopper,
       color: "yellow",
     },
     {
       name: "Transport",
-      path: "/dashboard/transport/routes",
+      path: `${basePath}/transport/routes`,
       module: "transport",
       icon: Bus,
       color: "cyan",
@@ -149,7 +160,7 @@ export default function Sidebar({
     /* Meal Plan hidden — not needed for this school
     {
       name: "Meal Plan",
-      path: "/dashboard/meal-plan",
+      path: `${basePath}/meal-plan`,
       module: "meal-plan",
       icon: UtensilsCrossed,
       color: "orange",
@@ -157,14 +168,14 @@ export default function Sidebar({
     */
     {
       name: "Gallery",
-      path: "/dashboard/gallery",
+      path: `${basePath}/gallery`,
       module: "gallery",
       icon: Image,
       color: "violet",
     },
     {
       name: "Settings",
-      path: "/dashboard/settings",
+      path: `${basePath}/settings`,
       module: "settings",
       icon: Settings,
       color: "slate",

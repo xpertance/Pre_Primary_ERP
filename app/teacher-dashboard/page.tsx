@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
 import Alert from "@/components/common/Alert";
+import Link from "next/link";
 import Breadcrumbs from "@/components/common/Breadcrumbs";
 import {
   BookOpen,
@@ -63,7 +64,8 @@ export default function TeacherDashboard() {
       setLoading(true);
 
       // Fetch current teacher info
-      const userRes = await fetch("/api/auth/me");
+      const userRes = await fetch("/api/auth/profile");
+      if (!userRes.ok) throw new Error(`userRes failed: ${await userRes.text()}`);
       const userData = await userRes.json();
       setTeacherInfo(userData.user);
 
@@ -76,6 +78,7 @@ export default function TeacherDashboard() {
 
       // Fetch teacher's classes (classes where this teacher is assigned)
       const classRes = await fetch(`/api/classes?teacherId=${teacherId}`);
+      if (!classRes.ok) throw new Error(`classRes failed: ${await classRes.text()}`);
       const classData = await classRes.json();
       const teacherClasses = classData.classes || [];
       setMyClasses(teacherClasses);
@@ -83,24 +86,41 @@ export default function TeacherDashboard() {
       // Get class IDs for filtering
       const classIds = teacherClasses.map((c: Class) => c._id);
 
-      // Fetch students in teacher's classes
-      const studentRes = await fetch(`/api/students?classIds=${classIds.join(",")}`);
-      const studentData = await studentRes.json();
-      const myStudents = studentData.students || [];
+      let myStudents = [];
+      let todayAttendanceRecords = [];
+      let upcomingExams = [];
+      let pendingTasksCount = 0;
 
-      // Fetch today's attendance for teacher's classes
-      const today = new Date().toISOString().split("T")[0];
-      const attendanceRes = await fetch(`/api/attendance?date=${today}&classIds=${classIds.join(",")}`);
-      const attendanceData = await attendanceRes.json();
-      const todayAttendanceRecords = attendanceData.data || [];
+      if (classIds.length > 0) {
+        // Fetch students in teacher's classes
+        const studentRes = await fetch(`/api/students?classIds=${classIds.join(",")}&limit=1000`);
+        if (!studentRes.ok) throw new Error(`studentRes failed: ${await studentRes.text()}`);
+        const studentData = await studentRes.json();
+        myStudents = studentData.students || studentData.data || [];
 
-      // Fetch upcoming exams for teacher's classes
-      const examRes = await fetch(`/api/exams?classIds=${classIds.join(",")}`);
-      const examData = await examRes.json();
-      const allExams = examData.exams || [];
-      const upcomingExams = allExams.filter((e: any) => 
-        new Date(e.startDate) > new Date() && e.status === "scheduled"
-      );
+        // Fetch today's attendance for teacher's classes
+        const today = new Date().toISOString().split("T")[0];
+        const attendanceRes = await fetch(`/api/attendance?date=${today}&classIds=${classIds.join(",")}&limit=1000`);
+        if (!attendanceRes.ok) throw new Error(`attendanceRes failed: ${await attendanceRes.text()}`);
+        const attendanceData = await attendanceRes.json();
+        todayAttendanceRecords = attendanceData.data || [];
+
+        // Fetch upcoming exams for teacher's classes
+        const examRes = await fetch(`/api/exams?classIds=${classIds.join(",")}&limit=1000`);
+        if (!examRes.ok) throw new Error(`examRes failed: ${await examRes.text()}`);
+        const examData = await examRes.json();
+        const allExams = examData.exams || [];
+        upcomingExams = allExams.filter((e: any) =>
+          new Date(e.startDate) > new Date() && e.status === "scheduled"
+        );
+
+        // Determine if attendance should be marked today for each class, if no attendance data is found for a class it implies a pending task.
+        const markedClassIds = new Set(todayAttendanceRecords.map((att: any) => att.classId?._id || att.classId));
+        const classesNeedingAttendance = classIds.filter((id: string) => !markedClassIds.has(id));
+
+        // Sum total pending tasks (Upcoming exams + Unmarked Attendance)
+        pendingTasksCount = upcomingExams.length + classesNeedingAttendance.length;
+      }
 
       // Calculate stats
       setStats({
@@ -108,7 +128,7 @@ export default function TeacherDashboard() {
         myStudents: myStudents.length,
         todayAttendance: todayAttendanceRecords.filter((a: any) => a.status === "present").length,
         upcomingExams: upcomingExams.length,
-        pendingTasks: 0, // Can be calculated based on assignments, grades, etc.
+        pendingTasks: pendingTasksCount,
       });
 
       // Mock recent activities (you can fetch actual activities from API)
@@ -125,9 +145,9 @@ export default function TeacherDashboard() {
         },
       ]);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch teacher data:", error);
-      setAlert({ type: "error", message: "Failed to load dashboard data" });
+      setAlert({ type: "error", message: error.message || "Failed to load dashboard data" });
     } finally {
       setLoading(false);
     }
@@ -155,7 +175,7 @@ export default function TeacherDashboard() {
 
   const formatTimeAgo = (date: Date) => {
     const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
-    
+
     if (seconds < 60) return "Just now";
     if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
@@ -188,11 +208,11 @@ export default function TeacherDashboard() {
           <div className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg">
             <Calendar className="w-5 h-5 text-gray-600" />
             <span className="text-sm font-medium text-gray-700">
-              {new Date().toLocaleDateString("en-US", { 
-                weekday: "long", 
-                year: "numeric", 
-                month: "long", 
-                day: "numeric" 
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric"
               })}
             </span>
           </div>
@@ -266,9 +286,9 @@ export default function TeacherDashboard() {
                 <School className="w-5 h-5 text-purple-600" />
                 My Classes
               </h2>
-              <button className="text-sm text-purple-600 hover:text-purple-700 font-medium">
+              <Link href="/teacher-dashboard/classes" className="text-sm text-purple-600 hover:text-purple-700 font-medium">
                 View All
-              </button>
+              </Link>
             </div>
 
             {myClasses.length > 0 ? (
@@ -293,9 +313,12 @@ export default function TeacherDashboard() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-all">
+                        <Link
+                          href="/teacher-dashboard/attendance"
+                          className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-all text-center block"
+                        >
                           Mark Attendance
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   </div>
@@ -319,33 +342,33 @@ export default function TeacherDashboard() {
               Quick Actions
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <button className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all">
+              <Link href="/teacher-dashboard/attendance" className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-all">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                   <CheckCircle2 className="w-6 h-6 text-purple-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">Mark Attendance</span>
-              </button>
+              </Link>
 
-              <button className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all">
+              <Link href="/teacher-dashboard/exams" className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <FileText className="w-6 h-6 text-blue-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">View Exams</span>
-              </button>
+              </Link>
 
-              <button className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all">
+              <Link href="/teacher-dashboard/students" className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition-all">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <Users className="w-6 h-6 text-green-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">View Students</span>
-              </button>
+              </Link>
 
-              <button className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all">
+              <Link href="/teacher-dashboard/timetable" className="flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all">
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                   <Calendar className="w-6 h-6 text-orange-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">View Timetable</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -387,8 +410,8 @@ export default function TeacherDashboard() {
             </div>
             <p className="text-2xl font-bold text-amber-600 mb-2">{stats.pendingTasks}</p>
             <p className="text-sm text-amber-700">
-              {stats.pendingTasks === 0 
-                ? "You're all caught up!" 
+              {stats.pendingTasks === 0
+                ? "You're all caught up!"
                 : "Tasks require your attention"}
             </p>
           </div>

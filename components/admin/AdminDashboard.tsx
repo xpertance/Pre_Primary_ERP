@@ -49,15 +49,16 @@ export default function AdminDashboard() {
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
         const today = now.toISOString().split('T')[0];
 
-        const [students, teachers, classes, feeSummary, attendance] = await Promise.all([
+        const [students, teachers, classes, feeSummary, attendance, admissionsList] = await Promise.all([
           fetch("/api/students?limit=500").then((r) => r.json()),
           fetch("/api/teachers").then((r) => r.json()),
           fetch("/api/classes").then((r) => r.json()),
           fetch("/api/fees/summary").then((r) => r.json()),
           fetch(`/api/attendance?startDate=${startOfMonth}&endDate=${today}&limit=1`).then((r) => r.json()),
+          fetch("/api/admission/list").then((r) => r.json()),
         ]);
 
-        // Calculate new admissions (joined in current month)
+        // Calculate new student admissions (joined in current month)
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
 
@@ -67,12 +68,16 @@ export default function AdminDashboard() {
           return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
         }).length || 0;
 
+        // Pending applications awaiting approval
+        const allAdmissionsArr = admissionsList?.admissions || [];
+        const pendingCount = allAdmissionsArr.filter((a: any) => a.status === 'submitted' || a.status === 'pending').length;
+
         setStats({
           totalStudents: students?.students?.length ?? students?.total ?? 0,
           totalTeachers: teachers?.teachers?.length ?? teachers?.data?.length ?? 0,
           totalClasses: classes?.classes?.length ?? 0,
-          totalAdmissions: newAdmissions, // Real calculated value
-          pendingAdmissions: 0, // Pending system implementation
+          totalAdmissions: allAdmissionsArr.length, // Display total active applications
+          pendingAdmissions: pendingCount, // Real dynamic value
           totalAttendance: attendance?.pagination?.total ?? 0,
           totalFees: feeSummary?.totalCollected ?? 0, // Real revenue
         });
@@ -162,7 +167,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-lg">
             <Clock className="w-4 h-4" />
-            <span className="text-sm font-medium">{new Date().toLocaleDateString('en-US', {
+            <span className="text-sm font-medium" suppressHydrationWarning>{new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               year: 'numeric',
               month: 'long',
@@ -249,7 +254,7 @@ export default function AdminDashboard() {
 
           <div className="space-y-2">
             <Link
-              href="/students"
+              href="/dashboard/students"
               className="flex items-center gap-3 px-4 py-3 bg-pink-50 hover:bg-pink-100 border border-pink-200 rounded-lg text-pink-700 font-medium transition-all group"
             >
               <Users className="w-5 h-5" />
@@ -257,7 +262,7 @@ export default function AdminDashboard() {
               <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
             <Link
-              href="/teachers"
+              href="/dashboard/teachers"
               className="flex items-center gap-3 px-4 py-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg text-purple-700 font-medium transition-all group"
             >
               <GraduationCap className="w-5 h-5" />
@@ -265,7 +270,7 @@ export default function AdminDashboard() {
               <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
             <Link
-              href="/classes"
+              href="/dashboard/classes"
               className="flex items-center gap-3 px-4 py-3 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg text-orange-700 font-medium transition-all group"
             >
               <School className="w-5 h-5" />
@@ -273,7 +278,7 @@ export default function AdminDashboard() {
               <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
             <Link
-              href="/attendance"
+              href="/dashboard/attendance"
               className="flex items-center gap-3 px-4 py-3 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg text-cyan-700 font-medium transition-all group"
             >
               <ClipboardCheck className="w-5 h-5" />
@@ -294,7 +299,7 @@ export default function AdminDashboard() {
           </div>
           <div>
             <p className="text-gray-600 text-sm mb-1">Last Updated</p>
-            <p className="font-semibold text-gray-800">{new Date().toLocaleDateString()}</p>
+            <p className="font-semibold text-gray-800" suppressHydrationWarning>{new Date().toLocaleDateString()}</p>
           </div>
           <div>
             <p className="text-gray-600 text-sm mb-1">Database Status</p>

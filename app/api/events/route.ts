@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !["admin", "teacher"].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 }
@@ -87,19 +87,21 @@ export async function POST(req: Request) {
     await event.save();
     await event.populate("classIds", "name section");
 
-    // Log admin activity
-    await logAdminActivity({
-      actorId: String(user.id),
-      actorRole: user.role,
-      action: "create:event",
-      message: `Event created: ${event.title}`,
-      metadata: {
-        eventId: event._id,
-        title: event.title,
-        eventType: event.eventType,
-        status: event.status,
-      },
-    });
+    // Log activity only for admin
+    if (user.role === "admin") {
+      await logAdminActivity({
+        actorId: String(user.id),
+        actorRole: user.role,
+        action: "create:event",
+        message: `Event created: ${event.title}`,
+        metadata: {
+          eventId: event._id,
+          title: event.title,
+          eventType: event.eventType,
+          status: event.status,
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, event }, { status: 201 });
   } catch (error) {
@@ -118,7 +120,7 @@ export async function PUT(req: Request) {
     const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !["admin", "teacher"].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 }
@@ -164,7 +166,7 @@ export async function DELETE(req: Request) {
     const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !["admin", "teacher"].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 }

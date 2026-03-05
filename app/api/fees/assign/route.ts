@@ -6,23 +6,31 @@ import FeeTransaction from "@/models/FeeTransaction";
 import User from "@/models/User";
 import { verifyToken } from "@/lib/auth";
 
-// Helper to check admin access
-async function checkAdmin(req: NextRequest) {
+// Helper to check authorized access (admin or teacher)
+async function checkAuth(req: NextRequest) {
     const token = req.cookies.get("token")?.value;
     const decoded = verifyToken(token);
     if (!decoded) return null;
 
     await connectDB();
-    const user = await User.findById(decoded.id);
-    if (!user || user.role !== "admin") return null;
+    let user: any = null;
+    if (decoded.role === "teacher") {
+        const Teacher = (await import("@/models/Teacher")).default;
+        user = await Teacher.findById(decoded.id);
+        if (user) user.role = "teacher";
+    } else {
+        user = await User.findById(decoded.id);
+    }
+
+    if (!user || !["admin", "teacher"].includes(user.role)) return null;
 
     return user;
 }
 
 export async function POST(req: NextRequest) {
     try {
-        const admin = await checkAdmin(req);
-        if (!admin) {
+        const authUser = await checkAuth(req);
+        if (!authUser) {
             return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
         }
 

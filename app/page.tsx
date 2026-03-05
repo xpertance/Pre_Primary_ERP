@@ -375,19 +375,13 @@ export default function LandingPage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-wrap gap-4">
-                <Link
-                  href="/login"
+                <a
+                  href="#contact"
                   className="inline-flex items-center gap-2 px-7 py-3.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all hover:-translate-y-0.5 group"
                 >
                   Start Free Trial
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-white border border-slate-200 text-slate-800 font-semibold rounded-xl hover:bg-slate-50 transition-all shadow-sm"
-                >
-                  Watch Demo
-                </Link>
+                </a>
               </div>
             </div>
 
@@ -489,10 +483,7 @@ export default function LandingPage() {
                   </div>
                 ))}
               </div>
-              <Link href="/login" className="mt-8 px-8 py-4 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2 text-lg font-medium inline-flex w-fit">
-                Learn More
-                <ArrowRight className="w-5 h-5" />
-              </Link>
+
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-primary/10 rounded-xl p-6 border border-primary/20">
@@ -619,12 +610,9 @@ export default function LandingPage() {
             Join hundreds of schools using Pre-Primary ERP to streamline their operations
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login" className="px-8 py-4 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium inline-block text-center whitespace-nowrap">
+            <a href="#contact" className="px-8 py-4 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium inline-block text-center whitespace-nowrap">
               Start Free Trial
-            </Link>
-            <Link href="/login" className="px-8 py-4 bg-transparent text-white rounded-lg border-2 border-white hover:bg-white/10 transition-colors text-lg font-medium inline-block text-center whitespace-nowrap">
-              Schedule Demo
-            </Link>
+            </a>
           </div>
         </div>
       </section>
@@ -814,7 +802,8 @@ export default function LandingPage() {
               <form className="space-y-5" onSubmit={handleCareerSubmit}>
                 {/* Prevent Captcha from FormSubmit when using AJAX */}
                 <input type="hidden" name="_captcha" value="false" />
-                <input type="hidden" name="_subject" value="New Career Application Submission!" />
+                <input type="hidden" name="_template" value="table" />
+                <input type="hidden" name="_subject" value="New Career Application: Pre-Primary ERP" />
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>
@@ -824,6 +813,17 @@ export default function LandingPage() {
                     required
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                     placeholder="John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                    placeholder="john@example.com"
                   />
                 </div>
 

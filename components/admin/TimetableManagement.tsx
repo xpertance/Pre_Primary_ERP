@@ -197,21 +197,25 @@ export default function TimetableManagement() {
     try {
       const res = await fetch(`/api/timetable/${id}`, { method: "DELETE" });
       const data = await res.json();
+      console.log("[TimetableManagement] Delete response:", data);
       if (data.success) {
         showToast.success("Timetable entry deleted successfully");
         fetchTimetables();
+      } else {
+        showToast.error(data.error || "Failed to delete timetable entry");
       }
     } catch (error) {
+      console.error("[TimetableManagement] Delete error:", error);
       showToast.error("Failed to delete timetable entry");
     }
   };
 
   const filteredTimetables = selectedClass
     ? timetables.filter((t) =>
-        typeof (t.classId as any) === "string"
-          ? (t.classId as any) === selectedClass
-          : (t.classId as any)?._id === selectedClass
-      )
+      typeof (t.classId as any) === "string"
+        ? (t.classId as any) === selectedClass
+        : (t.classId as any)?._id === selectedClass
+    )
     : timetables;
 
   const totalEntries = timetables.length;
@@ -229,6 +233,21 @@ export default function TimetableManagement() {
       )
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   };
+
+  // ---- Calendar colour map (computed before render) ----
+  const calendarSubjectColors = [
+    { bg: "bg-indigo-50", border: "border-indigo-300", accent: "bg-indigo-500", text: "text-indigo-700", badge: "bg-indigo-100 text-indigo-800" },
+    { bg: "bg-pink-50", border: "border-pink-300", accent: "bg-pink-500", text: "text-pink-700", badge: "bg-pink-100 text-pink-800" },
+    { bg: "bg-emerald-50", border: "border-emerald-300", accent: "bg-emerald-500", text: "text-emerald-700", badge: "bg-emerald-100 text-emerald-800" },
+    { bg: "bg-amber-50", border: "border-amber-300", accent: "bg-amber-500", text: "text-amber-700", badge: "bg-amber-100 text-amber-800" },
+    { bg: "bg-purple-50", border: "border-purple-300", accent: "bg-purple-500", text: "text-purple-700", badge: "bg-purple-100 text-purple-800" },
+    { bg: "bg-cyan-50", border: "border-cyan-300", accent: "bg-cyan-500", text: "text-cyan-700", badge: "bg-cyan-100 text-cyan-800" },
+    { bg: "bg-rose-50", border: "border-rose-300", accent: "bg-rose-500", text: "text-rose-700", badge: "bg-rose-100 text-rose-800" },
+    { bg: "bg-teal-50", border: "border-teal-300", accent: "bg-teal-500", text: "text-teal-700", badge: "bg-teal-100 text-teal-800" },
+  ];
+  const calendarAllSubjects = Array.from(new Set(timetables.map(t => t.subject)));
+  const calendarColorMap: Record<string, typeof calendarSubjectColors[0]> = {};
+  calendarAllSubjects.forEach((s, i) => { calendarColorMap[s] = calendarSubjectColors[i % calendarSubjectColors.length]; });
 
   const columns: Column[] = [
     {
@@ -346,22 +365,20 @@ export default function TimetableManagement() {
             <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode("calendar")}
-                className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
-                  viewMode === "calendar"
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
+                className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${viewMode === "calendar"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
+                  }`}
               >
                 <Calendar className="w-4 h-4" />
                 <span className="text-sm font-medium">Calendar</span>
               </button>
               <button
                 onClick={() => setViewMode("table")}
-                className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
-                  viewMode === "table"
-                    ? "bg-white text-indigo-600 shadow-sm"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
+                className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${viewMode === "table"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
+                  }`}
               >
                 <Grid3x3 className="w-4 h-4" />
                 <span className="text-sm font-medium">List</span>
@@ -408,82 +425,98 @@ export default function TimetableManagement() {
 
         {/* Calendar View */}
         {viewMode === "calendar" && selectedClass && (
-          <div className="overflow-x-auto">
-            <div className="min-w-[800px]">
-              <div className="grid grid-cols-6 gap-2">
-                {DAYS.map((day) => (
-                  <div key={day} className="border border-gray-200 rounded-lg">
-                    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 rounded-t-lg">
-                      <h3 className="font-semibold text-center">{day}</h3>
-                    </div>
-                    <div className="p-2 space-y-2 min-h-[400px] bg-gray-50">
-                      {getEntriesForDayAndClass(day, selectedClass).map((entry) => (
-                        <div
-                          key={entry._id}
-                          className="bg-white border border-indigo-200 rounded-lg p-3 hover:shadow-md transition-all cursor-pointer group"
-                          onClick={() => handleEditEntry(entry)}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <Badge variant="primary" size="sm">{entry.subject}</Badge>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditEntry(entry);
-                                }}
-                                className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteEntry(entry._id);
-                                }}
-                                className="p-1 text-red-600 hover:bg-red-100 rounded"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="text-xs text-gray-600 space-y-1">
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{entry.startTime} - {entry.endTime}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <GraduationCap className="w-3 h-3" />
-                              <span className="truncate">
-                                {(() => {
-                                  const t = entry.teacherId as any;
-                                  if (!t) return "-";
-                                  if (typeof t === "string") return "(Assigned)";
-                                  // prefer full name fields
-                                  return t.name || (t.firstName ? `${t.firstName} ${t.lastName || ""}` : "-");
-                                })()}
-                              </span>
-                            </div>
-                            {entry.roomNumber && (
-                              <div className="flex items-center gap-1">
-                                <DoorOpen className="w-3 h-3" />
-                                <span>Room {entry.roomNumber}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      {getEntriesForDayAndClass(day, selectedClass).length === 0 && (
-                        <div className="text-center text-gray-400 text-sm py-8">
-                          No classes scheduled
-                        </div>
-                      )}
-                    </div>
+          <div className="grid grid-cols-6 gap-2">
+            {DAYS.map((day) => {
+              const entries = getEntriesForDayAndClass(day, selectedClass);
+              return (
+                <div key={day} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm min-w-0">
+                  {/* Day Header */}
+                  <div className="px-3 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 flex items-center justify-between">
+                    <h3 className="font-bold text-white text-xs tracking-wide">{day}</h3>
+                    <span className="text-[10px] font-semibold bg-white/20 text-white px-1.5 py-0.5 rounded-full">
+                      {entries.length}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  {/* Entries */}
+                  <div className="p-2 space-y-2 min-h-[120px]">
+                    {entries.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-6 text-center">
+                        <Calendar className="w-5 h-5 text-gray-200 mb-1" />
+                        <p className="text-[10px] text-gray-400 font-medium">No classes</p>
+                      </div>
+                    ) : (
+                      entries.map((entry) => {
+                        const color = calendarColorMap[entry.subject] || calendarSubjectColors[0];
+                        const teacherName = (() => {
+                          const t = entry.teacherId as any;
+                          if (!t || typeof t === "string") return "—";
+                          return t.name || (t.firstName ? `${t.firstName} ${t.lastName || ""}`.trim() : "—");
+                        })();
+                        return (
+                          <div
+                            key={entry._id}
+                            className={`relative rounded-lg border ${color.border} ${color.bg} overflow-hidden group hover:shadow-md transition-all duration-200`}
+                          >
+                            {/* Left accent bar */}
+                            <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${color.accent}`} />
+
+                            <div className="pl-2.5 pr-2 py-2">
+                              {/* Subject + actions */}
+                              <div className="flex items-start justify-between gap-1 mb-1.5">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${color.badge} leading-snug truncate max-w-[100px]`}>
+                                  {entry.subject}
+                                </span>
+                                {/* Action buttons on hover */}
+                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleEditEntry(entry); }}
+                                    className="w-5 h-5 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors"
+                                    title="Edit"
+                                  >
+                                    <Edit2 className="w-2.5 h-2.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteEntry(entry._id); }}
+                                    className="w-5 h-5 rounded bg-red-100 hover:bg-red-200 text-red-700 flex items-center justify-center transition-colors"
+                                    title="Delete"
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Time */}
+                              <div className={`flex items-center gap-1 text-[10px] font-semibold ${color.text} mb-0.5`}>
+                                <Clock className="w-2.5 h-2.5 flex-shrink-0" />
+                                <span>{entry.startTime}–{entry.endTime}</span>
+                              </div>
+
+                              {/* Teacher */}
+                              <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                                <GraduationCap className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
+                                <span className="truncate">{teacherName}</span>
+                              </div>
+
+                              {/* Room */}
+                              {entry.roomNumber && (
+                                <div className="flex items-center gap-1 text-[10px] text-gray-400 mt-0.5">
+                                  <DoorOpen className="w-2.5 h-2.5 flex-shrink-0" />
+                                  <span>Rm {entry.roomNumber}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
+
 
         {/* Table View */}
         {viewMode === "table" && (
@@ -580,11 +613,10 @@ export default function TimetableManagement() {
                   key={day}
                   type="button"
                   onClick={() => setFormData((prev) => ({ ...prev, day }))}
-                  className={`px-3 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
-                    formData.day === day
-                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                      : "border-gray-200 bg-white text-gray-700 hover:border-indigo-300"
-                  }`}
+                  className={`px-3 py-2 rounded-lg border-2 transition-all text-sm font-medium ${formData.day === day
+                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-indigo-300"
+                    }`}
                 >
                   {day.substring(0, 3)}
                 </button>
@@ -647,6 +679,6 @@ export default function TimetableManagement() {
           />
         </div>
       </Modal>
-    </div>
+    </div >
   );
 }

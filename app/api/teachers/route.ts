@@ -19,8 +19,8 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const q = url.searchParams.get("q") || "";
-  const limit = Math.min(100, parseInt(url.searchParams.get("limit") || "10"));
-  
+  const limit = Math.min(1000, parseInt(url.searchParams.get("limit") || "500"));
+
   const filter: any = {};
   if (q) filter.$or = [{ name: { $regex: q, $options: "i" } }, { email: { $regex: q, $options: "i" } }];
 
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     .sort({ createdAt: -1 })
     .limit(limit)
     .lean();
-  
+
   return NextResponse.json({ success: true, data: teachers, teachers });
 }
 
@@ -45,10 +45,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const parsed = TeacherCreateZ.parse(body);
-    
+
     // Hash password before saving
     const hashedPassword = await bcryptjs.hash(parsed.password, 10);
-    
+
     const teacher = await Teacher.create({
       ...parsed,
       password: hashedPassword,

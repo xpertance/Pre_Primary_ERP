@@ -327,261 +327,311 @@ export default function AttendanceManagement() {
     }
   ];
 
+  const filteredHistory = attendances.filter(a => {
+    const student = a.studentId as any;
+    const name = `${student.firstName} ${student.lastName}`.toLowerCase();
+    const adm = (student.admissionNo || "").toLowerCase();
+    const query = historySearch.toLowerCase();
+    return name.includes(query) || adm.includes(query);
+  });
+
   return (
-    <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
-      <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Attendance" }]} />
+    <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
+      {/* Scrollable outer wrapper */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 md:p-6 flex flex-col gap-0">
+          <Breadcrumbs items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Attendance" }]} />
 
-      {/* Header */}
-      <div className="mt-6 mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Attendance Register</h1>
-        <p className="text-gray-500 mt-1 text-lg">Manage daily attendance and view history</p>
-      </div>
-
-      {/* Overall Stats Cards */}
-      {/* Overall Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider">Present Today</p>
-            <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <UserCheck className="w-5 h-5 text-emerald-600" />
-            </div>
+          {/* Header */}
+          <div className="mt-6 mb-8">
+            <h1 className="text-3xl font-bold text-gray-800">Attendance Register</h1>
+            <p className="text-gray-500 mt-1 text-lg">Manage daily attendance and view history</p>
           </div>
-          <p className="text-3xl font-extrabold text-emerald-900">{stats.present}</p>
-        </div>
 
-        <div className="bg-pink-50 p-5 rounded-2xl border border-pink-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-pink-700 text-xs font-bold uppercase tracking-wider">Absent Today</p>
-            <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <UserX className="w-5 h-5 text-pink-600" />
-            </div>
-          </div>
-          <p className="text-3xl font-extrabold text-pink-900">{stats.absent}</p>
-        </div>
-
-        <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-amber-700 text-xs font-bold uppercase tracking-wider">Late Arrival</p>
-            <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <Clock className="w-5 h-5 text-amber-600" />
-            </div>
-          </div>
-          <p className="text-3xl font-extrabold text-amber-900">{stats.late}</p>
-        </div>
-
-        <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-          <div className="flex justify-between items-start mb-2">
-            <p className="text-blue-700 text-xs font-bold uppercase tracking-wider">Attendance Rate</p>
-            <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
-              <ClipboardCheck className="w-5 h-5 text-blue-600" />
-            </div>
-          </div>
-          <p className="text-3xl font-extrabold text-blue-900">{stats.rate}%</p>
-        </div>
-      </div>
-
-      {/* Main Action Area */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-
-        {/* Toolbar */}
-        <div className="p-5 border-b border-gray-100 bg-gray-50/30 flex flex-col md:flex-row gap-5 items-center justify-between sticky top-0 z-10 backdrop-blur-sm">
-
-          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
-            {/* View Mode Tabs */}
-            <div className="flex bg-gray-100 p-1.5 rounded-xl self-start w-full md:w-auto">
-              <button
-                onClick={() => setViewMode("mark")}
-                className={`flex-1 md:flex-none px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${viewMode === "mark" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                Mark Register
-              </button>
-              <button
-                onClick={() => setViewMode("history")}
-                className={`flex-1 md:flex-none px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${viewMode === "history" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                View History
-              </button>
-            </div>
-
-            {/* Class Selector */}
-            <div className="relative">
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className="w-full md:w-64 appearance-none px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 font-medium text-gray-700"
-              >
-                <option value="" disabled>Select Class</option>
-                {classes.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name} - {c.section}</option>
-                ))}
-              </select>
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                <ChevronDown className="w-4 h-4" />
+          {/* Overall Stats Cards */}
+          {/* Overall Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+            <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider">Present Today</p>
+                <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <UserCheck className="w-5 h-5 text-emerald-600" />
+                </div>
               </div>
+              <p className="text-3xl font-extrabold text-emerald-900">{stats.present}</p>
             </div>
 
-            {/* Date Selector */}
-            <div className="relative">
-              <input
-                type="date"
-                value={attendanceDate}
-                onChange={(e) => setAttendanceDate(e.target.value)}
-                className="w-full md:w-auto px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 font-medium text-gray-700"
-              />
+            <div className="bg-pink-50 p-5 rounded-2xl border border-pink-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-pink-700 text-xs font-bold uppercase tracking-wider">Absent Today</p>
+                <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <UserX className="w-5 h-5 text-pink-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-extrabold text-pink-900">{stats.absent}</p>
+            </div>
+
+            <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-amber-700 text-xs font-bold uppercase tracking-wider">Late Arrival</p>
+                <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-extrabold text-amber-900">{stats.late}</p>
+            </div>
+
+            <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-blue-700 text-xs font-bold uppercase tracking-wider">Attendance Rate</p>
+                <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <ClipboardCheck className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+              <p className="text-3xl font-extrabold text-blue-900">{stats.rate}%</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
-            {viewMode === "mark" && (
-              <>
-                <button
-                  onClick={() => markAll("present")}
-                  className="flex-1 md:flex-none px-4 py-2.5 text-sm font-semibold text-green-700 bg-green-50 rounded-xl hover:bg-green-100 border border-green-200 whitespace-nowrap transition-colors"
-                >
-                  Mark All Present
-                </button>
-                <button
-                  onClick={saveAttendance}
-                  className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:shadow-lg hover:from-orange-600 hover:to-red-600 transition-all active:scale-95 whitespace-nowrap shadow-orange-200"
-                >
-                  <Save className="w-5 h-5" />
-                  Save Changes
-                </button>
-              </>
-            )}
-            {viewMode === "history" && (
-              <button onClick={() => exportToCSV(attendances, "attendance.csv")} className="p-3 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 transition-colors">
-                <Download className="w-5 h-5" />
-              </button>
-            )}
-          </div>
-        </div>
+          {/* Main Action Area - flex col to allow inner scrolling */}
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col" style={{ minHeight: '480px' }}>
 
-        {/* Content Area */}
-        <div className="p-5 md:p-8 bg-gray-50/30">
-          {viewMode === "mark" ? (
-            <>
-              {!selectedClass ? (
-                <div className="text-center py-32 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
-                  <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-10 h-10 text-gray-300" />
-                  </div>
-                  <p className="text-lg font-medium text-gray-600">Select a class to mark attendance</p>
-                  <p className="text-sm text-gray-400 mt-1">Choose from the dropdown above</p>
+            {/* Toolbar */}
+            <div className="px-5 pt-4 pb-4 border-b border-gray-100 bg-white sticky top-[64px] z-20 shadow-sm">
+
+              {/* Row 1: Tabs + Actions */}
+              <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                {/* View Mode Tabs */}
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                  <button
+                    onClick={() => setViewMode("mark")}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap ${viewMode === "mark" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    Mark Register
+                  </button>
+                  <button
+                    onClick={() => setViewMode("history")}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap ${viewMode === "history" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  >
+                    View History
+                  </button>
                 </div>
-              ) : loadingRegister ? (
-                <div className="text-center py-32">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-                  <p className="text-gray-500 font-medium">Loading class register...</p>
+
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {viewMode === "mark" && (
+                    <>
+                      <button
+                        onClick={() => markAll("present")}
+                        className="px-4 py-2 text-sm font-semibold text-green-700 bg-green-50 rounded-xl hover:bg-green-100 border border-green-200 whitespace-nowrap transition-colors"
+                      >
+                        Mark All Present
+                      </button>
+                      <button
+                        onClick={saveAttendance}
+                        className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded-xl hover:shadow-lg hover:from-orange-600 hover:to-red-600 transition-all active:scale-95 whitespace-nowrap"
+                      >
+                        <Save className="w-4 h-4" />
+                        Save Changes
+                      </button>
+                    </>
+                  )}
+                  {viewMode === "history" && (
+                    <button onClick={() => exportToCSV(attendances, "attendance.csv")} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 transition-colors text-sm font-medium">
+                      <Download className="w-4 h-4" />
+                      Export
+                    </button>
+                  )}
                 </div>
-              ) : classStudents.length === 0 ? (
-                <div className="text-center py-32 text-gray-500 bg-white rounded-2xl border border-dashed border-gray-200">
-                  <p>No students found in this class</p>
-                </div>
-              ) : (
-                <>
-                  {/* Register Stats Bar */}
-                  <div className="flex flex-col sm:flex-row gap-4 mb-8 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm justify-center sm:justify-between items-center">
-                    <span className="font-bold text-gray-700 flex items-center gap-2">
-                      <div className="w-1.5 h-6 bg-orange-500 rounded-full"></div>
-                      Class Summary
-                    </span>
-                    <div className="flex flex-wrap justify-center gap-2 md:gap-6">
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg border border-green-100">
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                        <span className="text-green-700 font-bold">{currentRegisterStats.present} Present</span>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 rounded-lg border border-red-100">
-                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                        <span className="text-red-700 font-bold">{currentRegisterStats.absent} Absent</span>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 rounded-lg border border-amber-100">
-                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                        <span className="text-amber-700 font-bold">{currentRegisterStats.late} Late</span>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
-                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                        <span className="text-blue-700 font-bold">{currentRegisterStats.excused} Excused</span>
-                      </div>
-                    </div>
-                    <span className="text-gray-400 font-medium hidden sm:inline border-l border-gray-200 pl-4">{currentRegisterStats.total} Students</span>
-                  </div>
+              </div>
 
-                  {/* Student Register Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-                    {classStudents.map((student) => (
-                      <div key={student._id} className="flex flex-row items-center justify-between p-4 border border-gray-200 rounded-2xl hover:border-orange-300 hover:shadow-md transition-all duration-200 bg-white group relative overflow-hidden">
-                        {/* Status Indicator Bar */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 
-                          ${studentStatus[student._id] === "present" ? "bg-green-500" :
-                            studentStatus[student._id] === "absent" ? "bg-red-500" :
-                              studentStatus[student._id] === "late" ? "bg-amber-500" :
-                                "bg-blue-500"
-                          } transition-colors duration-300`}></div>
-
-                        {/* Student Info */}
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-base font-bold text-gray-600 border border-gray-100">
-                            {student.firstName.charAt(0)}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-gray-800 truncate text-base">{student.firstName} <span className="hidden sm:inline">{student.lastName}</span></h3>
-                            <p className="text-xs text-gray-500 font-medium">Roll No: {student.admissionNo || "NA"}</p>
-                          </div>
-                        </div>
-
-                        {/* Status Toggles - Icon Only */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => toggleStatus(student._id, "present")}
-                            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${studentStatus[student._id] === "present" ? "bg-green-500 text-white shadow-sm scale-105" : "bg-white border border-gray-200 text-gray-300 hover:border-green-300 hover:text-green-500"}`}
-                            title="Present"
-                          >
-                            <CheckCircle2 className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => toggleStatus(student._id, "absent")}
-                            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${studentStatus[student._id] === "absent" ? "bg-red-500 text-white shadow-sm scale-105" : "bg-white border border-gray-200 text-gray-300 hover:border-red-300 hover:text-red-500"}`}
-                            title="Absent"
-                          >
-                            <XCircle className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => toggleStatus(student._id, "late")}
-                            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${studentStatus[student._id] === "late" ? "bg-amber-500 text-white shadow-sm scale-105" : "bg-white border border-gray-200 text-gray-300 hover:border-amber-300 hover:text-amber-500"}`}
-                            title="Late"
-                          >
-                            <Clock className="w-5 h-5" />
-                          </button>
-                          <button
-                            onClick={() => toggleStatus(student._id, "excused")}
-                            className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${studentStatus[student._id] === "excused" ? "bg-blue-500 text-white shadow-sm scale-105" : "bg-white border border-gray-200 text-gray-300 hover:border-blue-300 hover:text-blue-500"}`}
-                            title="Excused"
-                          >
-                            <ShieldCheck className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
+              {/* Row 2: Class Selector + Date Selector */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Class Selector */}
+                <div className="relative flex-1 min-w-[160px] max-w-[260px]">
+                  <select
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    className="w-full appearance-none pl-4 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 font-medium text-gray-700 text-sm"
+                  >
+                    <option value="" disabled>Select Class</option>
+                    {classes.map((c) => (
+                      <option key={c._id} value={c._id}>{c.name} - {c.section}</option>
                     ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <ChevronDown className="w-4 h-4" />
                   </div>
-                </>
-              )}
-            </>
-          ) : (
-            // History View
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-1">
-              <div className="overflow-x-auto">
-                <Table
-                  columns={columns}
-                  data={attendances}
-                  loading={loadingHistory}
-                />
+                </div>
+
+                {/* Date Selector */}
+                <div className="relative group">
+                  <Calendar className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="date"
+                    value={attendanceDate}
+                    onChange={(e) => setAttendanceDate(e.target.value)}
+                    className="pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 font-medium text-gray-700 text-sm transition-all"
+                  />
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Content Area - fills remaining space and scrolls */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-5 md:p-6 bg-gray-50/30" style={{ minHeight: '200px' }}>
+              {viewMode === "mark" ? (
+                <>
+                  {!selectedClass ? (
+                    <div className="text-center py-32 text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
+                      <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Users className="w-10 h-10 text-gray-300" />
+                      </div>
+                      <p className="text-lg font-medium text-gray-600">Select a class to mark attendance</p>
+                      <p className="text-sm text-gray-400 mt-1">Choose from the dropdown above</p>
+                    </div>
+                  ) : loadingRegister ? (
+                    <div className="text-center py-32">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                      <p className="text-gray-500 font-medium">Loading class register...</p>
+                    </div>
+                  ) : classStudents.length === 0 ? (
+                    <div className="text-center py-32 text-gray-500 bg-white rounded-2xl border border-dashed border-gray-200">
+                      <p>No students found in this class</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Register Stats Bar */}
+                      <div className="mb-6 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                          <span className="font-bold text-gray-800 flex items-center gap-2 text-sm">
+                            <div className="w-1.5 h-5 bg-orange-500 rounded-full"></div>
+                            Class Summary
+                          </span>
+                          <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                            {currentRegisterStats.total} Students Total
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-100">
+                          <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 bg-green-50/50">
+                            <span className="text-2xl font-extrabold text-green-700">{currentRegisterStats.present}</span>
+                            <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Present</span>
+                          </div>
+                          <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 bg-red-50/50">
+                            <span className="text-2xl font-extrabold text-red-700">{currentRegisterStats.absent}</span>
+                            <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">Absent</span>
+                          </div>
+                          <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 bg-amber-50/50">
+                            <span className="text-2xl font-extrabold text-amber-700">{currentRegisterStats.late}</span>
+                            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Late</span>
+                          </div>
+                          <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 bg-blue-50/50">
+                            <span className="text-2xl font-extrabold text-blue-700">{currentRegisterStats.excused}</span>
+                            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Excused</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Student Register Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {classStudents.map((student, index) => {
+                          const status = studentStatus[student._id] || "present";
+                          const statusConfig: Record<string, { bg: string; lightBg: string; border: string; text: string; label: string }> = {
+                            present: { bg: "bg-green-500", lightBg: "bg-green-50", border: "border-green-400", text: "text-green-700", label: "Present" },
+                            absent: { bg: "bg-red-500", lightBg: "bg-red-50", border: "border-red-400", text: "text-red-700", label: "Absent" },
+                            late: { bg: "bg-amber-500", lightBg: "bg-amber-50", border: "border-amber-400", text: "text-amber-700", label: "Late" },
+                            excused: { bg: "bg-blue-500", lightBg: "bg-blue-50", border: "border-blue-400", text: "text-blue-700", label: "Excused" },
+                          };
+                          const current = statusConfig[status] || statusConfig.present;
+                          const avatarColors = [
+                            "from-orange-400 to-red-400",
+                            "from-purple-400 to-indigo-400",
+                            "from-teal-400 to-green-400",
+                            "from-pink-400 to-rose-400",
+                            "from-blue-400 to-cyan-400",
+                            "from-amber-400 to-orange-400",
+                          ];
+                          const avatarColor = avatarColors[index % avatarColors.length];
+                          const buttons: { key: "present" | "absent" | "late" | "excused"; icon: React.ReactNode; shortLabel: string; color: string; activeColor: string }[] = [
+                            { key: "present", icon: <CheckCircle2 className="w-4 h-4" />, shortLabel: "P", color: "text-green-600 hover:bg-green-50 hover:border-green-400", activeColor: "bg-green-500 text-white border-green-500 shadow-md" },
+                            { key: "absent", icon: <XCircle className="w-4 h-4" />, shortLabel: "A", color: "text-red-500   hover:bg-red-50   hover:border-red-400", activeColor: "bg-red-500   text-white border-red-500   shadow-md" },
+                            { key: "late", icon: <Clock className="w-4 h-4" />, shortLabel: "L", color: "text-amber-600 hover:bg-amber-50 hover:border-amber-400", activeColor: "bg-amber-500 text-white border-amber-500 shadow-md" },
+                            { key: "excused", icon: <ShieldCheck className="w-4 h-4" />, shortLabel: "E", color: "text-blue-600  hover:bg-blue-50  hover:border-blue-400", activeColor: "bg-blue-500  text-white border-blue-500  shadow-md" },
+                          ];
+                          return (
+                            <div key={student._id} className={`relative bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden shadow-sm hover:shadow-lg ${current.border}`}>
+                              {/* Top accent bar */}
+                              <div className={`h-2 w-full ${current.bg}`} />
+                              <div className="p-4">
+                                {/* Student info */}
+                                <div className="flex items-center gap-3 mb-4">
+                                  <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${avatarColor} flex items-center justify-center text-white text-xl font-extrabold shadow-sm`}>
+                                    {student.firstName.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">
+                                      {student.firstName} {student.lastName || ""}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      Reg No: <span className="text-gray-700 font-semibold">{student.admissionNo || "N/A"}</span>
+                                    </p>
+                                  </div>
+                                  <span className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${current.lightBg} ${current.text} border ${current.border}`}>
+                                    {current.label}
+                                  </span>
+                                </div>
+                                {/* Toggle Buttons */}
+                                <div className="grid grid-cols-4 gap-2">
+                                  {buttons.map(btn => (
+                                    <button
+                                      key={btn.key}
+                                      onClick={() => toggleStatus(student._id, btn.key)}
+                                      title={btn.key.charAt(0).toUpperCase() + btn.key.slice(1)}
+                                      className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border-2 text-xs font-bold transition-all duration-200 active:scale-95 ${status === btn.key ? btn.activeColor : `bg-gray-50 border-gray-200 ${btn.color}`}`}
+                                    >
+                                      {btn.icon}
+                                      <span className="text-[10px] leading-none">{btn.shortLabel}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                // History View
+                <div className="space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-4">
+                    <div className="relative flex-1 w-full">
+                      <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        placeholder="Search by student name or admission number..."
+                        value={historySearch}
+                        onChange={(e) => setHistorySearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 font-medium text-gray-700"
+                      />
+                    </div>
+                    <div className="text-sm text-gray-500 font-medium px-4 py-2 bg-white border border-gray-200 rounded-xl">
+                      {filteredHistory.length} records found
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-1">
+                    <div className="overflow-x-auto">
+                      <Table
+                        columns={columns}
+                        data={filteredHistory}
+                        loading={loadingHistory}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

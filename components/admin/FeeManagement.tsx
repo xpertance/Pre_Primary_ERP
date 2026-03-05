@@ -63,7 +63,6 @@ interface Column {
 export default function FeeStructureManagement() {
   const [feeStructures, setFeeStructures] = useState<FeeStructure[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
-  const [feeHeadsMaster, setFeeHeadsMaster] = useState<{ _id: string, name: string, defaultAmount: number, type: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -90,7 +89,6 @@ export default function FeeStructureManagement() {
   useEffect(() => {
     fetchFeeStructures();
     fetchClasses();
-    fetchFeeHeadsMaster();
   }, []);
 
   const fetchFeeStructures = async () => {
@@ -116,17 +114,7 @@ export default function FeeStructureManagement() {
     }
   };
 
-  const fetchFeeHeadsMaster = async () => {
-    try {
-      const res = await fetch("/api/fees/heads");
-      const data = await res.json();
-      if (data.success) {
-        setFeeHeadsMaster(data.heads || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch fee heads master:", error);
-    }
-  };
+
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -149,22 +137,7 @@ export default function FeeStructureManagement() {
 
   const handleFeeHeadChange = (index: number, field: keyof FeeHead, value: string | number) => {
     const updatedHeads = [...formData.heads];
-
-    if (field === "title") {
-      const selectedMaster = feeHeadsMaster.find((h) => h.name === value);
-      if (selectedMaster) {
-        updatedHeads[index] = {
-          ...updatedHeads[index],
-          title: selectedMaster.name,
-          amount: selectedMaster.defaultAmount,
-          frequency: (selectedMaster.type === "one-time" ? "one-time" : "monthly") as FeeHead["frequency"],
-        };
-      } else {
-        updatedHeads[index] = { ...updatedHeads[index], [field]: value };
-      }
-    } else {
-      updatedHeads[index] = { ...updatedHeads[index], [field]: value };
-    }
+    updatedHeads[index] = { ...updatedHeads[index], [field]: value };
     setFormData((prev) => ({ ...prev, heads: updatedHeads }));
   };
 
@@ -549,16 +522,13 @@ export default function FeeStructureManagement() {
                     <X className="w-4 h-4" />
                   </button>
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <select
+                    <input
+                      type="text"
+                      placeholder="Fee Name (e.g. Tuition Fee) *"
                       value={head.title}
                       onChange={(e) => handleFeeHeadChange(idx, "title", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm bg-white"
-                    >
-                      <option value="">Select Head</option>
-                      {feeHeadsMaster.map(h => (
-                        <option key={h._id} value={h.name}>{h.name}</option>
-                      ))}
-                    </select>
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 text-sm"
+                    />
                     <input
                       type="number"
                       placeholder="Amount *"

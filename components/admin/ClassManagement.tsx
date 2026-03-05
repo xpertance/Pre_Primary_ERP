@@ -62,6 +62,7 @@ export default function ClassManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -122,8 +123,11 @@ export default function ClassManagement() {
     }
 
     try {
+      setSaving(true);
       const method = editingClass ? "PUT" : "POST";
       const url = editingClass ? `/api/classes/${editingClass._id}` : "/api/classes";
+
+      console.log(`[ClassManagement] ${method} to ${url}`, formData);
 
       const res = await fetch(url, {
         method,
@@ -137,9 +141,16 @@ export default function ClassManagement() {
         setEditingClass(null);
         setFormData({ name: "", section: "A", roomNumber: "", teachers: [], students: [] });
         fetchClasses();
+      } else {
+        const errorData = await res.json();
+        console.error("[ClassManagement] Error response:", errorData);
+        showToast.error(errorData.error || "Failed to save class");
       }
     } catch (error) {
+      console.error("[ClassManagement] Fetch error:", error);
       showToast.error("Failed to save class");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -402,7 +413,7 @@ export default function ClassManagement() {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddClass} variant="primary">
+            <Button onClick={handleAddClass} variant="primary" loading={saving}>
               {editingClass ? "Update" : "Add"} Class
             </Button>
           </>
@@ -439,11 +450,10 @@ export default function ClassManagement() {
                   key={section}
                   type="button"
                   onClick={() => setFormData((prev) => ({ ...prev, section }))}
-                  className={`px-4 py-3 rounded-lg border-2 transition-all font-medium ${
-                    formData.section === section
-                      ? "border-orange-500 bg-orange-50 text-orange-700"
-                      : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
-                  }`}
+                  className={`px-4 py-3 rounded-lg border-2 transition-all font-medium ${formData.section === section
+                    ? "border-orange-500 bg-orange-50 text-orange-700"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-orange-300"
+                    }`}
                 >
                   {section}
                 </button>

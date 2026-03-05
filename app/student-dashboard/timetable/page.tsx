@@ -1,6 +1,5 @@
-"use client";
-import TimetableView from "@/components/admin/TimetableView";
+import TimetableManagement from "@/components/admin/TimetableManagement";
 
-export default function StudentTimetablePage() {
-  return <TimetableView />;
+export default function DashboardTimetablePage() {
+  return <TimetableManagement />;
 }

@@ -17,27 +17,17 @@ export async function PUT(
     const token = req.cookies.get("token")?.value;
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin")
+    if (!user || !["admin", "teacher"].includes(user.role))
         return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
 
     try {
         const body = await req.json();
         const parsed = TimetableCreateZ.parse(body);
 
-        // Validate Teacher Subject
+        // Verify teacher exists
         const teacher = await import("@/models/Teacher").then((mod) => mod.default.findById(parsed.teacherId));
         if (!teacher) {
             return NextResponse.json({ success: false, error: "Teacher not found" }, { status: 404 });
-        }
-
-        if (!teacher.subjects?.includes(parsed.subject)) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: `Verification Failed: ${teacher.name} is not assigned to teach ${parsed.subject}. Please update the teacher's profile first.`,
-                },
-                { status: 400 }
-            );
         }
 
         const updated = await Timetable.findByIdAndUpdate(id, parsed, { new: true });
@@ -46,19 +36,21 @@ export async function PUT(
             return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
         }
 
-        // Log admin activity
-        await logAdminActivity({
-            actorId: String(user.id),
-            actorRole: user.role,
-            action: "update:timetable",
-            message: `Timetable updated: ${updated.subject}`,
-            metadata: {
-                timetableId: updated._id,
-                classId: updated.classId,
-                teacherId: updated.teacherId,
-                subject: updated.subject,
-            }
-        });
+        // Log activity only for admin
+        if (user.role === "admin") {
+            await logAdminActivity({
+                actorId: String(user.id),
+                actorRole: user.role,
+                action: "update:timetable",
+                message: `Timetable updated: ${updated.subject}`,
+                metadata: {
+                    timetableId: updated._id,
+                    classId: updated.classId,
+                    teacherId: updated.teacherId,
+                    subject: updated.subject,
+                }
+            });
+        }
 
         return NextResponse.json({ success: true, timetable: updated });
     } catch (err: any) {
@@ -78,8 +70,8 @@ export async function DELETE(
     const token = req.cookies.get("token")?.value;
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin") {
-        return NextResponse.json({ success: false, error: "Only admin can delete" }, { status: 403 });
+    if (!user || !["admin", "teacher"].includes(user.role)) {
+        return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
     }
 
     const deleted = await Timetable.findByIdAndDelete(id);
@@ -88,17 +80,19 @@ export async function DELETE(
         return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
     }
 
-    // Log admin activity
-    await logAdminActivity({
-        actorId: String(user.id),
-        actorRole: user.role,
-        action: "delete:timetable",
-        message: `Timetable deleted: ${deleted.subject}`,
-        metadata: {
-            timetableId: deleted._id,
-            subject: deleted.subject,
-        }
-    });
+    // Log activity only for admin
+    if (user.role === "admin") {
+        await logAdminActivity({
+            actorId: String(user.id),
+            actorRole: user.role,
+            action: "delete:timetable",
+            message: `Timetable deleted: ${deleted.subject}`,
+            metadata: {
+                timetableId: deleted._id,
+                subject: deleted.subject,
+            }
+        });
+    }
 
     return NextResponse.json({ success: true, deletedId: id });
 }

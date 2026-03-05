@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const q = url.searchParams.get("q") || "";
-  const limit = Math.min(100, parseInt(url.searchParams.get("limit") || "10"));
+  const limit = Math.min(500, parseInt(url.searchParams.get("limit") || "100"));
 
   const filter: any = {};
 

@@ -555,23 +555,11 @@ export default function ExamManagement() {
           </>
         }
       >
-        <div className="space-y-5 mt-4 max-h-[70vh] overflow-y-auto pr-2">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
-              {editingExam ? (
-                <Edit2 className="w-5 h-5 text-white" />
-              ) : (
-                <Plus className="w-5 h-5 text-white" />
-              )}
-            </div>
-            <h2 className="text-lg font-semibold text-gray-800">
-              {editingExam ? "Edit Exam" : "Create Exam"}
-            </h2>
-          </div>
+        <div className="space-y-0 mt-2 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
 
-          {/* Basic Information */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          {/* ── Basic Information ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <FileText className="w-4 h-4" />
               Basic Information
             </h3>
@@ -586,25 +574,25 @@ export default function ExamManagement() {
               />
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Add description..."
+                  placeholder="Add a description..."
                   rows={2}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none text-sm"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Class *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Class *</label>
                   <select
                     name="classId"
                     value={formData.classId}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white text-sm"
                   >
                     <option value="">Select Class</option>
                     {classes.map((cls) => (
@@ -616,12 +604,12 @@ export default function ExamManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Exam Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Exam Type</label>
                   <select
                     name="examType"
                     value={formData.examType}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white text-sm"
                   >
                     {EXAM_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -642,7 +630,7 @@ export default function ExamManagement() {
                   fullWidth
                 />
                 <Input
-                  label="End Date *"
+                  label="End Date"
                   name="endDate"
                   type="date"
                   value={formData.endDate}
@@ -672,112 +660,155 @@ export default function ExamManagement() {
             </div>
           </div>
 
-          {/* Subjects */}
-          <div className="border-t pt-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          {/* ── Subjects ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
               Subjects
-            </label>
-            <div className="space-y-2">
+            </h3>
+            <div className="space-y-3">
               <div className="flex gap-2">
                 <input
+                  id="subjectInput"
                   type="text"
-                  placeholder="Type subject and press Enter"
-                  onKeyPress={(e) => {
+                  placeholder="Type subject name..."
+                  onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      handleAddSubject(e.currentTarget.value);
-                      e.currentTarget.value = "";
+                      handleAddSubject((e.target as HTMLInputElement).value);
+                      (e.target as HTMLInputElement).value = "";
                     }
                   }}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.getElementById("subjectInput") as HTMLInputElement;
+                    if (input) {
+                      handleAddSubject(input.value);
+                      input.value = "";
+                      input.focus();
+                    }
+                  }}
+                  className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add
+                </button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.subjects.map((subject, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
-                  >
-                    {subject}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSubject(index)}
-                      className="hover:bg-blue-200 rounded-full p-0.5"
+              {formData.subjects.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {formData.subjects.map((subject, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-sm font-medium"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
+                      {subject}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSubject(index)}
+                        className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic">No subjects added yet.</p>
+              )}
             </div>
           </div>
 
-          {/* Schedule */}
-          <div className="border-t pt-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          {/* ── Exam Schedule ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              Exam Schedule (Optional)
-            </label>
+              Exam Schedule
+              <span className="text-xs font-normal text-gray-400 normal-case tracking-normal">(Optional)</span>
+            </h3>
             <div className="space-y-3">
               {formData.schedule.map((item, idx) => (
-                <div key={idx} className="p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
+                <div key={idx} className="p-4 bg-gray-50 rounded-xl border border-gray-200 relative">
                   <button
                     type="button"
                     onClick={() => handleRemoveScheduleItem(idx)}
-                    className="absolute top-2 right-2 p-1 text-red-600 hover:bg-red-100 rounded transition-all"
+                    className="absolute top-3 right-3 p-1 text-red-500 hover:bg-red-100 rounded-lg transition-all"
                   >
                     <X className="w-4 h-4" />
                   </button>
+                  <p className="text-xs font-semibold text-gray-500 mb-3">Schedule Item {idx + 1}</p>
+
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <input
-                      type="text"
-                      placeholder="Subject"
-                      value={item.subject}
-                      onChange={(e) => handleScheduleChange(idx, "subject", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    />
-                    <input
-                      type="date"
-                      value={item.date}
-                      onChange={(e) => handleScheduleChange(idx, "date", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    />
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Mathematics"
+                        value={item.subject}
+                        onChange={(e) => handleScheduleChange(idx, "subject", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+                      <input
+                        type="date"
+                        value={item.date}
+                        onChange={(e) => handleScheduleChange(idx, "date", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      />
+                    </div>
                   </div>
+
                   <div className="grid grid-cols-3 gap-3 mb-3">
-                    <input
-                      type="time"
-                      value={item.startTime}
-                      onChange={(e) => handleScheduleChange(idx, "startTime", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    />
-                    <input
-                      type="time"
-                      value={item.endTime}
-                      onChange={(e) => handleScheduleChange(idx, "endTime", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    />
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Start Time</label>
+                      <input
+                        type="time"
+                        value={item.startTime}
+                        onChange={(e) => handleScheduleChange(idx, "startTime", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">End Time</label>
+                      <input
+                        type="time"
+                        value={item.endTime}
+                        onChange={(e) => handleScheduleChange(idx, "endTime", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Room</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Room 101"
+                        value={item.roomNumber}
+                        onChange={(e) => handleScheduleChange(idx, "roomNumber", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Instructions</label>
                     <input
                       type="text"
-                      placeholder="Room"
-                      value={item.roomNumber}
-                      onChange={(e) => handleScheduleChange(idx, "roomNumber", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      placeholder="e.g., Bring calculator, No mobile phones"
+                      value={item.instructions}
+                      onChange={(e) => handleScheduleChange(idx, "instructions", e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
                     />
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Instructions (optional)"
-                    value={item.instructions}
-                    onChange={(e) => handleScheduleChange(idx, "instructions", e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                  />
                 </div>
               ))}
               <button
                 type="button"
                 onClick={handleAddScheduleItem}
-                className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-all w-full justify-center"
+                className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center text-sm font-medium"
               >
                 <Plus className="w-4 h-4" />
                 Add Schedule Item
@@ -785,16 +816,19 @@ export default function ExamManagement() {
             </div>
           </div>
 
-          {/* Status & Publishing */}
-          <div className="border-t pt-5">
-            <div className="grid grid-cols-2 gap-4">
+          {/* ── Status & Publishing ── */}
+          <div className="p-5">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
+              Status & Publishing
+            </h3>
+            <div className="grid grid-cols-2 gap-4 items-end">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white text-sm"
                 >
                   <option value="scheduled">Scheduled</option>
                   <option value="ongoing">Ongoing</option>
@@ -802,17 +836,29 @@ export default function ExamManagement() {
                 </select>
               </div>
 
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center gap-3 pb-1">
+                <div className="relative">
                   <input
                     type="checkbox"
+                    id="isPublished"
                     name="isPublished"
                     checked={formData.isPublished}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-400"
+                    className="sr-only"
                   />
-                  <span className="text-sm font-medium text-gray-700">Publish Results</span>
-                </label>
+                  <div
+                    onClick={() => setFormData(prev => ({ ...prev, isPublished: !prev.isPublished }))}
+                    className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${formData.isPublished ? "bg-blue-500" : "bg-gray-300"}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full shadow mt-1 transition-transform ${formData.isPublished ? "translate-x-6" : "translate-x-1"}`} />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="isPublished" className="text-sm font-medium text-gray-700 cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, isPublished: !prev.isPublished }))}>
+                    Publish Results
+                  </label>
+                  <p className="text-xs text-gray-400">Visible to students</p>
+                </div>
               </div>
             </div>
           </div>

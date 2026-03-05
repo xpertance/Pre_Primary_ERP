@@ -13,9 +13,11 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const studentId = searchParams.get("studentId");
     const classId = searchParams.get("classId");
+    const classIds = searchParams.get("classIds");
     const status = searchParams.get("status");
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const dateParam = searchParams.get("date");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
 
@@ -23,19 +25,29 @@ export async function GET(req: Request) {
 
     if (studentId) filter.studentId = studentId;
     if (classId) filter.classId = classId;
+    if (classIds) {
+      const ids = classIds.split(",").filter(Boolean);
+      if (ids.length > 0) filter.classId = { $in: ids };
+    }
     if (status) filter.status = status;
 
-    if (startDate || endDate) {
+    if (startDate || endDate || dateParam) {
       filter.date = {};
 
-      if (startDate) {
-        const [sy, sm, sd] = startDate.split("-").map(Number);
-        (filter.date as Record<string, unknown>).$gte = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
-      }
+      if (dateParam) {
+        const [y, m, d] = dateParam.split("-").map(Number);
+        (filter.date as Record<string, unknown>).$gte = new Date(y, m - 1, d, 0, 0, 0, 0);
+        (filter.date as Record<string, unknown>).$lte = new Date(y, m - 1, d, 23, 59, 59, 999);
+      } else {
+        if (startDate) {
+          const [sy, sm, sd] = startDate.split("-").map(Number);
+          (filter.date as Record<string, unknown>).$gte = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+        }
 
-      if (endDate) {
-        const [ey, em, ed] = endDate.split("-").map(Number);
-        (filter.date as Record<string, unknown>).$lte = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+        if (endDate) {
+          const [ey, em, ed] = endDate.split("-").map(Number);
+          (filter.date as Record<string, unknown>).$lte = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+        }
       }
     }
 

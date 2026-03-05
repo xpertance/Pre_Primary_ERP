@@ -1,14 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { connectDB } from "@/lib/db";
 import ClassModel from "@/models/Class";
+import Teacher from "@/models/Teacher"; // ✅ Fixed missing import
 import { verifyToken } from "@/lib/auth";
 import { ClassCreateZ } from "@/lib/validations/classSchema";
 import { logAdminActivity } from "@/lib/logAdminActivity";
 
-export async function GET(req: Request, { params }: any) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   await connectDB();
+  const { id } = await params;
 
-  const classData = await ClassModel.findById(params.id)
+  const classData = await ClassModel.findById(id)
     .populate("teachers")
     .populate("students")
     .lean();
@@ -18,10 +23,14 @@ export async function GET(req: Request, { params }: any) {
   return NextResponse.json({ success: true, class: classData });
 }
 
-export async function PUT(req: Request, { params }: any) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   await connectDB();
+  const { id } = await params;
 
-  const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
+  const token = req.cookies.get("token")?.value;
   const user = verifyToken(token);
   if (!user || user.role !== "admin")
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
@@ -31,18 +40,22 @@ export async function PUT(req: Request, { params }: any) {
     const parsed = ClassCreateZ.partial().parse(body);
 
     // Get old class data to compare teachers
-    const oldClass = await ClassModel.findById(params.id);
+    const oldClass = await ClassModel.findById(id);
     if (!oldClass) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
 
-    const updated = await ClassModel.findByIdAndUpdate(params.id, parsed, { new: true });
+    const updated = await ClassModel.findByIdAndUpdate(id, parsed, { new: true });
+
+    if (!updated) {
+      return NextResponse.json({ success: false, error: "Class not found after update" }, { status: 404 });
+    }
 
     // --- SYNC LOGIC: Class -> Teacher ---
     if (parsed.teachers) {
       const oldTeacherIds = oldClass.teachers.map((t: any) => t.toString());
       const newTeacherIds = parsed.teachers.map((t: any) => t.toString());
 
-      const added = newTeacherIds.filter((id: string) => !oldTeacherIds.includes(id));
-      const removed = oldTeacherIds.filter((id: string) => !newTeacherIds.includes(id));
+      const added = newTeacherIds.filter((tid: string) => !oldTeacherIds.includes(tid));
+      const removed = oldTeacherIds.filter((tid: string) => !newTeacherIds.includes(tid));
 
       if (added.length > 0) {
         await Teacher.updateMany(
@@ -76,22 +89,27 @@ export async function PUT(req: Request, { params }: any) {
 
     return NextResponse.json({ success: true, class: updated });
   } catch (err: any) {
+    console.error("[api/classes/[id]] Update failed:", err);
     return NextResponse.json({ success: false, error: err.message }, { status: 400 });
   }
 }
 
-export async function DELETE(req: Request, { params }: any) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   await connectDB();
+  const { id } = await params;
 
-  const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
+  const token = req.cookies.get("token")?.value;
   const user = verifyToken(token);
 
   if (!user || user.role !== "admin")
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
 
-  const deleted = await ClassModel.findByIdAndDelete(params.id);
+  const deleted = await ClassModel.findByIdAndDelete(id);
 
-  if (!deleted) return NextResponse.json({ success: false, error: "Not found" });
+  if (!deleted) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
 
   // Log admin activity
   await logAdminActivity({
@@ -107,5 +125,5 @@ export async function DELETE(req: Request, { params }: any) {
     }
   });
 
-  return NextResponse.json({ success: true, deletedId: params.id });
+  return NextResponse.json({ success: true, deletedId: id });
 }

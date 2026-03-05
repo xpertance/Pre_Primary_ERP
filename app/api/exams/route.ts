@@ -17,10 +17,15 @@ export async function GET(req: Request) {
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
     const limit = Math.max(1, Math.min(100, parseInt(url.searchParams.get("limit") || "10")));
     const classId = url.searchParams.get("classId");
+    const classIds = url.searchParams.get("classIds");
     const status = url.searchParams.get("status");
 
     const filter: Record<string, unknown> = {};
     if (classId) filter.classId = classId;
+    if (classIds) {
+      const ids = classIds.split(",").filter(Boolean);
+      if (ids.length > 0) filter.classId = { $in: ids };
+    }
     if (status) filter.status = status;
 
     const skip = (page - 1) * limit;
@@ -56,7 +61,7 @@ export async function POST(req: Request) {
     const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !["admin", "teacher"].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 }
@@ -89,19 +94,21 @@ export async function POST(req: Request) {
     await exam.save();
     await exam.populate("classId", "name section");
 
-    // Log admin activity
-    await logAdminActivity({
-      actorId: String(user.id),
-      actorRole: user.role,
-      action: "create:exam",
-      message: `Exam created: ${exam.name}`,
-      metadata: {
-        examId: exam._id,
-        name: exam.name,
-        examType: exam.examType,
-        totalMarks: exam.totalMarks,
-      },
-    });
+    // Log activity only for admin
+    if (user.role === "admin") {
+      await logAdminActivity({
+        actorId: String(user.id),
+        actorRole: user.role,
+        action: "create:exam",
+        message: `Exam created: ${exam.name}`,
+        metadata: {
+          examId: exam._id,
+          name: exam.name,
+          examType: exam.examType,
+          totalMarks: exam.totalMarks,
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, exam }, { status: 201 });
   } catch (error) {
@@ -120,7 +127,7 @@ export async function PUT(req: Request) {
     const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !["admin", "teacher"].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 }
@@ -166,7 +173,7 @@ export async function DELETE(req: Request) {
     const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
     const user = verifyToken(token);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !["admin", "teacher"].includes(user.role)) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
         { status: 403 }

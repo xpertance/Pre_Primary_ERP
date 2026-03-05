@@ -171,6 +171,13 @@ export default function TransportManagement() {
     }
   };
 
+  // Phone-only handler: strips non-digits, caps at 10 characters
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digits = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setFormData((prev) => ({ ...prev, driverPhone: digits }));
+  };
+
+
   const handleAddStop = () => {
     setFormData((prev) => ({
       ...prev,
@@ -591,23 +598,11 @@ export default function TransportManagement() {
           </>
         }
       >
-        <div className="space-y-5 mt-4 max-h-[70vh] overflow-y-auto pr-2">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center">
-              {editingRoute ? (
-                <Edit2 className="w-5 h-5 text-white" />
-              ) : (
-                <Plus className="w-5 h-5 text-white" />
-              )}
-            </div>
-            <h2 className="text-lg font-semibold text-gray-800">
-              {editingRoute ? "Edit Route" : "Create Route"}
-            </h2>
-          </div>
+        <div className="space-y-0 mt-2 max-h-[72vh] overflow-y-auto pr-1 custom-scrollbar">
 
-          {/* Basic Information */}
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          {/* ── Basic Information ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Bus className="w-4 h-4" />
               Route Information
             </h3>
@@ -632,34 +627,34 @@ export default function TransportManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleInputChange}
-                  placeholder="Describe the route..."
+                  placeholder="Describe the route trajectory..."
                   rows={2}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none text-sm"
                 />
               </div>
             </div>
           </div>
 
-          {/* Vehicle Information */}
-          <div className="border-t pt-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          {/* ── Vehicle Information ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Navigation className="w-4 h-4" />
               Vehicle Details
             </h3>
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Vehicle Type</label>
                   <select
                     name="vehicleType"
                     value={formData.vehicleType}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white text-sm"
                   >
                     {VEHICLE_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -689,9 +684,9 @@ export default function TransportManagement() {
             </div>
           </div>
 
-          {/* Driver Information */}
-          <div className="border-t pt-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          {/* ── Driver Information ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <User className="w-4 h-4" />
               Driver Information
             </h3>
@@ -705,74 +700,103 @@ export default function TransportManagement() {
                   placeholder="Enter driver name"
                   fullWidth
                 />
-                <Input
-                  label="Driver Phone"
-                  name="driverPhone"
-                  value={formData.driverPhone}
-                  onChange={handleInputChange}
-                  placeholder="+91 9876543210"
-                  fullWidth
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Driver Phone
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="tel"
+                      name="driverPhone"
+                      value={formData.driverPhone}
+                      onChange={handlePhoneChange}
+                      placeholder="9876543210"
+                      maxLength={10}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all pr-14 text-sm font-medium"
+                    />
+                    <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold tabular-nums ${formData.driverPhone.length === 10 ? "text-green-500" : "text-gray-400"}`}>
+                      {formData.driverPhone.length}/10
+                    </span>
+                  </div>
+                  {formData.driverPhone.length > 0 && formData.driverPhone.length < 10 && (
+                    <p className="text-[10px] text-amber-500 mt-1 font-medium">10 digits required</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Stops */}
-          <div className="border-t pt-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+          {/* ── Route Stops ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
               <MapPin className="w-4 h-4" />
               Route Stops
-            </label>
-            <div className="space-y-3">
+            </h3>
+            <div className="space-y-4">
               {formData.stops.map((stop, idx) => (
                 <div
                   key={idx}
-                  className="p-4 bg-gray-50 rounded-lg border border-gray-200 relative"
+                  className="p-4 bg-gray-50 rounded-xl border border-gray-200 relative group"
                 >
-                  <div className="absolute -left-3 top-4 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  <div className="absolute -left-2 top-4 w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">
                     {stop.sequence}
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRemoveStop(idx)}
-                    className="absolute top-2 right-2 p-1 text-red-600 hover:bg-red-100 rounded transition-all"
+                    className="absolute top-3 right-3 p-1.5 text-red-500 hover:bg-red-100 rounded-lg transition-all"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <input
-                      type="text"
-                      placeholder="Stop Name *"
-                      value={stop.stopName}
-                      onChange={(e) => handleStopChange(idx, "stopName", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Location"
-                      value={stop.location}
-                      onChange={(e) => handleStopChange(idx, "location", e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-600 mb-1 block">Pickup Time</label>
-                      <input
-                        type="time"
-                        value={stop.pickupTime}
-                        onChange={(e) => handleStopChange(idx, "pickupTime", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                      />
+
+                  <div className="ml-4 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Stop Name *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g., Central Park"
+                          value={stop.stopName}
+                          onChange={(e) => handleStopChange(idx, "stopName", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block">Location</label>
+                        <input
+                          type="text"
+                          placeholder="Street/Area"
+                          value={stop.location}
+                          onChange={(e) => handleStopChange(idx, "location", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-gray-600 mb-1 block">Drop Time</label>
-                      <input
-                        type="time"
-                        value={stop.dropTime}
-                        onChange={(e) => handleStopChange(idx, "dropTime", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Pickup Time
+                        </label>
+                        <input
+                          type="time"
+                          value={stop.pickupTime}
+                          onChange={(e) => handleStopChange(idx, "pickupTime", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-gray-500 uppercase mb-1 block flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Drop Time
+                        </label>
+                        <input
+                          type="time"
+                          value={stop.dropTime}
+                          onChange={(e) => handleStopChange(idx, "dropTime", e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -780,59 +804,70 @@ export default function TransportManagement() {
               <button
                 type="button"
                 onClick={handleAddStop}
-                className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-all w-full justify-center"
+                className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all w-full justify-center text-sm font-semibold"
               >
                 <Plus className="w-4 h-4" />
-                Add Stop
+                Add Stop Point
               </button>
             </div>
           </div>
 
-          {/* Student Assignment */}
-          <div className="border-t pt-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Assign Students ({formData.students.length} selected)
-            </label>
-            <div className="border border-gray-200 rounded-lg p-3 max-h-60 overflow-y-auto">
-              <div className="space-y-2">
-                {students.map((student) => (
-                  <label
-                    key={student._id}
-                    className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.students.includes(student._id)}
-                      onChange={() => handleStudentToggle(student._id)}
-                      className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-400"
-                    />
-                    <div className="flex-1">
-                      <span className="text-sm text-gray-800">
-                        {student.firstName} {student.lastName}
-                      </span>
-                      {student.admissionNo && (
-                        <span className="text-xs text-gray-500 ml-2">
-                          ({student.admissionNo})
-                        </span>
-                      )}
-                    </div>
-                  </label>
-                ))}
+          {/* ── Student Assignment ── */}
+          <div className="p-5 border-b border-gray-100">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Assigned Students
+              </div>
+              <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                {formData.students.length} selected
+              </span>
+            </h3>
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="max-h-56 overflow-y-auto custom-scrollbar divide-y divide-gray-100">
+                {students.length > 0 ? (
+                  students.map((student) => (
+                    <label
+                      key={student._id}
+                      className={`flex items-center gap-3 p-3 hover:bg-blue-50 cursor-pointer transition-colors ${formData.students.includes(student._id) ? "bg-blue-50/50" : ""}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.students.includes(student._id)}
+                        onChange={() => handleStudentToggle(student._id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-400 border-gray-300"
+                      />
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold text-gray-800">
+                          {student.firstName} {student.lastName}
+                        </div>
+                        {student.admissionNo && (
+                          <div className="text-[10px] font-bold text-gray-400 uppercase">
+                            ID: {student.admissionNo}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-gray-400 text-sm italic">
+                    No students found.
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Status */}
-          <div className="border-t pt-5">
-            <div className="grid grid-cols-2 gap-4">
+          {/* ── Status & Activation ── */}
+          <div className="p-5 pb-8">
+            <div className="grid grid-cols-2 gap-6 items-center">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Service Status</label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white text-sm font-medium"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
@@ -840,17 +875,29 @@ export default function TransportManagement() {
                 </select>
               </div>
 
-              <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-center gap-3 pt-6">
+                <div className="relative">
                   <input
                     type="checkbox"
+                    id="isActive"
                     name="isActive"
                     checked={formData.isActive}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-400"
+                    className="sr-only"
                   />
-                  <span className="text-sm font-medium text-gray-700">Route is Active</span>
-                </label>
+                  <div
+                    onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}
+                    className={`w-11 h-6 rounded-full cursor-pointer transition-colors ${formData.isActive ? "bg-green-500" : "bg-gray-300"}`}
+                  >
+                    <div className={`w-4 h-4 bg-white rounded-full shadow mt-1 transition-transform ${formData.isActive ? "translate-x-6" : "translate-x-1"}`} />
+                  </div>
+                </div>
+                <div>
+                  <label htmlFor="isActive" className="text-sm font-bold text-gray-700 cursor-pointer" onClick={() => setFormData(prev => ({ ...prev, isActive: !prev.isActive }))}>
+                    Route Active
+                  </label>
+                  <p className="text-[10px] text-gray-400 font-medium">Toggle visibility in student profiles</p>
+                </div>
               </div>
             </div>
           </div>

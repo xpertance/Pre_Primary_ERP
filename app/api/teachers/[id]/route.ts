@@ -54,12 +54,12 @@ export async function PUT(
     const body = await req.json();
 
     if (user.role === "teacher" && String(user.id) !== String(id)) {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Forbidden: You can only edit your own profile" }, { status: 403 });
     }
 
-    // Get old teacher data to compare classes
+    // Get old teacher data to compare classes for sync
     const oldTeacher = await Teacher.findById(id);
-    if (!oldTeacher) return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+    if (!oldTeacher) return NextResponse.json({ success: false, error: "Teacher not found" }, { status: 404 });
 
     // Hash password if provided
     const updateData = { ...body };
@@ -72,33 +72,31 @@ export async function PUT(
     const updated = await Teacher.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!updated) {
-      return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
+      console.error("[api/teachers/[id]] Teacher not found:", id);
+      return NextResponse.json({ success: false, error: "Teacher not found" }, { status: 404 });
     }
 
     // --- SYNC LOGIC: Teacher -> Class ---
-    // Only admin can change classes, usually.
-    if (updateData.classes) {
-      const oldClassIds = oldTeacher.classes.map((c: any) => c.classId.toString());
-      const newClassIds = updateData.classes.map((c: any) => c.classId.toString());
+    // Update Class model so its 'teachers' array reflects this teacher mapping
+    if (updateData.classes && Array.isArray(updateData.classes)) {
+      try {
+        const { default: ClassModel } = await import("@/models/Class");
+        const oldClassIds = oldTeacher.classes.map((c: any) => c.classId.toString());
+        const newClassIds = updateData.classes.map((c: any) => c.classId.toString());
 
-      import("@/models/Class").then(async ({ default: ClassModel }) => {
         const added = newClassIds.filter((cid: string) => !oldClassIds.includes(cid));
         const removed = oldClassIds.filter((cid: string) => !newClassIds.includes(cid));
 
         if (added.length > 0) {
-          await ClassModel.updateMany(
-            { _id: { $in: added } },
-            { $addToSet: { teachers: updated._id } }
-          );
+          await ClassModel.updateMany({ _id: { $in: added } }, { $addToSet: { teachers: updated._id } });
         }
-
         if (removed.length > 0) {
-          await ClassModel.updateMany(
-            { _id: { $in: removed } },
-            { $pull: { teachers: updated._id } }
-          );
+          await ClassModel.updateMany({ _id: { $in: removed } }, { $pull: { teachers: updated._id } });
         }
-      });
+      } catch (syncError) {
+        console.error("[api/teachers/[id]] Sync with classes failed:", syncError);
+        // We don't fail the whole update just because class sync failed, but it's good to log
+      }
     }
     // ------------------------------------
 
@@ -109,58 +107,79 @@ export async function PUT(
         actorRole: user.role,
         action: "update:teacher",
         message: `Teacher updated: ${updated.name}`,
-        metadata: {
-          teacherId: updated._id,
-          name: updated.name,
-          email: updated.email,
-          department: updated.department,
-        }
+        metadata: { teacherId: updated._id, name: updated.name, email: updated.email },
       });
     }
 
     return NextResponse.json({ success: true, teacher: updated });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message || "Invalid" }, { status: 400 });
+    console.error("[api/teachers/[id]] Update failed:", err);
+    return NextResponse.json({ success: false, error: err.message || "Invalid update data" }, { status: 400 });
   }
 }
 
 
 
-// ---------------------- DELETE ----------------------
 export async function DELETE(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  await connectDB();
+  try {
+    await connectDB();
+    const { id } = await context.params;
 
-  const { id } = await context.params; // ✅ FIX
+    const token = req.cookies.get(\"token\")?.value;
+    const decoded = verifyToken(token);
 
-  const token = req.cookies.get("token")?.value;
-  const user = verifyToken(token);
-
-  if (!user || user.role !== "admin") {
-    return NextResponse.json({ success: false, error: "Only admin can delete" }, { status: 403 });
-  }
-
-  const deleted = await Teacher.findByIdAndDelete(id);
-
-  if (!deleted) {
-    return NextResponse.json({ success: false, error: "Not found" }, { status: 404 });
-  }
-
-  // Log admin activity
-  await logAdminActivity({
-    actorId: String(user.id),
-    actorRole: user.role,
-    action: "delete:teacher",
-    message: `Teacher deleted: ${deleted.name}`,
-    metadata: {
-      teacherId: deleted._id,
-      name: deleted.name,
-      email: deleted.email,
-      department: deleted.department,
+    if (!decoded) {
+      return NextResponse.json({
+        success: false, error: \"Unauthorized\" }, { status: 401 });
     }
-  });
 
-  return NextResponse.json({ success: true, deletedId: id });
+    // Fetch user from DB for fresh role check
+    const User = (await import(\"@/models/User\")).default;
+    const authUser = await User.findById(decoded.id);
+
+      if (!authUser || authUser.role !== \"admin\") {
+      return NextResponse.json({
+        success: false, error: \"Only admin can delete teachers\" }, { status: 403 });
+    }
+
+    // 1. Fetch the teacher to get their name and classes for logging/cleanup
+    const teacher = await Teacher.findById(id);
+      if (!teacher) {
+        return NextResponse.json({
+          success: false, error: \"Teacher not found\" }, { status: 404 });
+    }
+
+    // 2. Clean up teacher from all classes they are assigned to
+    try {
+          const { default: ClassModel } = await import(\"@/models/Class\");
+      await ClassModel.updateMany(
+            { teachers: id },
+            { $pull: { teachers: id } }
+          );
+        } catch (cleanupErr) {
+          console.error(\"[api/teachers/delete] Class cleanup failed:\", cleanupErr);
+    }
+
+        // 3. Delete the teacher record
+        await Teacher.findByIdAndDelete(id);
+
+        // 4. Log admin activity
+        await logAdminActivity({
+          actorId: String(authUser._id),
+          actorRole: authUser.role,
+          action: \"delete:teacher\",
+      message: `Teacher deleted: ${teacher.name}`,
+          metadata: { teacherId: id, name: teacher.name, email: teacher.email },
+    });
+
+      return NextResponse.json({
+        success: true, message: \"Teacher deleted successfully\" });
+  } catch (error: any) {
+        console.error(\"[api/teachers/delete] Error:\", error);
+    return NextResponse.json({
+          success: false, error: error.message || \"Failed to delete teacher\" }, { status: 500 });
+  }
 }

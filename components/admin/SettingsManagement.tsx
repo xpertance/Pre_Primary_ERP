@@ -37,6 +37,7 @@ interface SchoolSettings {
     enableGallery: boolean;
     enableEvents: boolean;
     enableOnlinePayment: boolean;
+    enableClaudeHaiku45?: boolean;
   };
 }
 
@@ -83,7 +84,7 @@ export default function SettingsManagement() {
   const [settings, setSettings] = useState<SchoolSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   const [formData, setFormData] = useState<SchoolSettings>({
     schoolName: "",
     schoolLogo: "",
@@ -159,8 +160,8 @@ export default function SettingsManagement() {
     }));
   };
 
-  const enabledFeaturesCount = formData.featureFlags 
-    ? Object.values(formData.featureFlags).filter(Boolean).length 
+  const enabledFeaturesCount = formData.featureFlags
+    ? Object.values(formData.featureFlags).filter(Boolean).length
     : 0;
 
   return (
@@ -191,7 +192,7 @@ export default function SettingsManagement() {
           </div>
         </div>
 
-              <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-green-700 text-sm font-medium mb-2">Active Features</p>
@@ -276,9 +277,13 @@ export default function SettingsManagement() {
                 <input
                   type="tel"
                   name="schoolPhone"
-                  placeholder="Enter phone number"
+                  placeholder="Enter 10-digit phone number"
                   value={formData.schoolPhone}
-                  onChange={handleInputChange}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^\d]/g, '');
+                    setFormData(prev => ({ ...prev, schoolPhone: value }));
+                  }}
+                  maxLength={10}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
                 />
               </div>
@@ -348,11 +353,10 @@ export default function SettingsManagement() {
                 return (
                   <div
                     key={feature.key}
-                    className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                      isEnabled
-                        ? "border-green-300 bg-green-50"
-                        : "border-gray-200 bg-white hover:border-gray-300"
-                    }`}
+                    className={`p-4 rounded-lg border-2 transition-all cursor-pointer ${isEnabled
+                      ? "border-green-300 bg-green-50"
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
                     onClick={() => handleFeatureToggle(feature.key)}
                   >
                     <div className="flex items-start gap-4">

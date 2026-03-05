@@ -1,11 +1,12 @@
 import StudentFeeDetails from "@/components/admin/StudentFeeDetails";
 
 interface Props {
-    params: {
+    params: Promise<{
         id: string;
-    };
+    }>;
 }
 
-export default function StudentFeeDetailsPage({ params }: Props) {
-    return <StudentFeeDetails studentId={params.id} />;
+export default async function StudentFeeDetailsPage({ params }: Props) {
+    const resolvedParams = await params;
+    return <StudentFeeDetails studentId={resolvedParams.id} />;
 }

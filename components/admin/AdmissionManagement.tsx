@@ -42,7 +42,7 @@ export default function AdmissionManagement() {
       setLoading(true);
       const res = await fetch("/api/admission/list");
       const data = await res.json();
-      setAdmissions(data || []);
+      setAdmissions(data.admissions || []);
     } catch (error) {
       showToast.error("Failed to fetch admissions");
     } finally {
@@ -56,8 +56,8 @@ export default function AdmissionManagement() {
         newStatus === "approved"
           ? `/api/admission/approve`
           : newStatus === "rejected"
-          ? `/api/admission/reject`
-          : null;
+            ? `/api/admission/reject`
+            : null;
       if (!endpoint) return;
       const res = await fetch(endpoint, {
         method: "POST",
@@ -192,44 +192,47 @@ export default function AdmissionManagement() {
             </Select>
           </div>
         </div>
-        <Table
-          columns={columns}
-          data={filteredAdmissions}
-          loading={loading}
-          onRowClick={(row) => {
-            setEditingAdmission(row as Admission);
-            setModalOpen(true);
-          }}
-          actions={(row) => (
-            <div className="flex gap-1">
-              {(row as Admission).status === "submitted" && (
-                <>
-                  <button
-                    onClick={() => handleStatusChange((row as Admission)._id, "approved")}
-                    className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => handleStatusChange((row as Admission)._id, "rejected")}
-                    className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
-                  >
-                    Reject
-                  </button>
-                </>
-              )}
-              <button
-                onClick={() => {
-                  setEditingAdmission(row as Admission);
-                  setModalOpen(true);
-                }}
-                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-              >
-                View
-              </button>
-            </div>
-          )}
-        />
+        <div className="max-h-[calc(100vh-340px)] overflow-y-auto custom-scrollbar">
+          <Table
+            columns={columns}
+            data={filteredAdmissions}
+            loading={loading}
+            onRowClick={(row) => {
+              setEditingAdmission(row as Admission);
+              setModalOpen(true);
+            }}
+            actions={(row) => (
+              <div className="flex gap-1">
+                {(row as Admission).status === "submitted" && (
+                  <>
+                    <button
+                      onClick={() => handleStatusChange((row as Admission)._id, "approved")}
+                      className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleStatusChange((row as Admission)._id, "rejected")}
+                      className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    setEditingAdmission(row as Admission);
+                    setModalOpen(true);
+                  }}
+                  className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                >
+                  View
+                </button>
+              </div>
+            )}
+          />
+        </div>
+
       </Card>
       <Modal
         isOpen={modalOpen}

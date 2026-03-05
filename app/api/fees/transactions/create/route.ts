@@ -19,11 +19,18 @@ export async function POST(req: NextRequest) {
         }
 
         await connectDB();
-        const user = await User.findById(decoded.id);
+        let authUser: any = null;
+        if (decoded.role === "teacher") {
+            const Teacher = (await import("@/models/Teacher")).default;
+            authUser = await Teacher.findById(decoded.id);
+            if (authUser) authUser.role = "teacher";
+        } else {
+            authUser = await User.findById(decoded.id);
+        }
 
-        if (!user || user.role !== "admin") {
+        if (!authUser || !["admin", "teacher"].includes(authUser.role)) {
             return NextResponse.json(
-                { success: false, error: "Access denied. Admin only." },
+                { success: false, error: "Access denied. Admin or Teacher only." },
                 { status: 403 }
             );
         }
