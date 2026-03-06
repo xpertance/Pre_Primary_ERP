@@ -10,7 +10,7 @@ export async function GET(req: Request) {
 
   const token = req.headers.get("cookie")?.match(/token=([^;]+)/)?.[1];
   const user = verifyToken(token);
-  if (!user || !["admin","finance","teacher"].includes(user.role)) {
+  if (!user || !["admin", "finance", "teacher"].includes(user.role)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 403 });
   }
 
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     FeeStructure.countDocuments()
   ]);
 
-  return NextResponse.json({ success: true, items, pagination: { page, limit, total, pages: Math.ceil(total/limit) }});
+  return NextResponse.json({ success: true, items, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
 }
 
 export async function POST(req: Request) {
@@ -52,6 +52,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, item: created }, { status: 201 });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 400 });
+    // Surface Zod validation details for easier debugging
+    const details = err?.issues ?? err?.errors ?? undefined;
+    return NextResponse.json(
+      { success: false, error: err.message, ...(details ? { details } : {}) },
+      { status: 400 }
+    );
   }
 }
