@@ -128,39 +128,39 @@ export async function DELETE(
     await connectDB();
     const { id } = await context.params;
 
-    const token = req.cookies.get(\"token\")?.value;
+    const token = req.cookies.get("token")?.value;
     const decoded = verifyToken(token);
 
     if (!decoded) {
       return NextResponse.json({
-        success: false, error: \"Unauthorized\" }, { status: 401 });
+        success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     // Fetch user from DB for fresh role check
-    const User = (await import(\"@/models/User\")).default;
+    const User = (await import("@/models/User")).default;
     const authUser = await User.findById(decoded.id);
 
-      if (!authUser || authUser.role !== \"admin\") {
+      if (!authUser || authUser.role !== "admin") {
       return NextResponse.json({
-        success: false, error: \"Only admin can delete teachers\" }, { status: 403 });
+        success: false, error: "Only admin can delete teachers" }, { status: 403 });
     }
 
     // 1. Fetch the teacher to get their name and classes for logging/cleanup
     const teacher = await Teacher.findById(id);
       if (!teacher) {
         return NextResponse.json({
-          success: false, error: \"Teacher not found\" }, { status: 404 });
+          success: false, error: "Teacher not found" }, { status: 404 });
     }
 
     // 2. Clean up teacher from all classes they are assigned to
     try {
-          const { default: ClassModel } = await import(\"@/models/Class\");
+          const { default: ClassModel } = await import("@/models/Class");
       await ClassModel.updateMany(
             { teachers: id },
             { $pull: { teachers: id } }
           );
         } catch (cleanupErr) {
-          console.error(\"[api/teachers/delete] Class cleanup failed:\", cleanupErr);
+          console.error("[api/teachers/delete] Class cleanup failed:\", cleanupErr");
     }
 
         // 3. Delete the teacher record
@@ -170,16 +170,16 @@ export async function DELETE(
         await logAdminActivity({
           actorId: String(authUser._id),
           actorRole: authUser.role,
-          action: \"delete:teacher\",
+          action: "delete:teacher",
       message: `Teacher deleted: ${teacher.name}`,
           metadata: { teacherId: id, name: teacher.name, email: teacher.email },
     });
 
       return NextResponse.json({
-        success: true, message: \"Teacher deleted successfully\" });
+        success: true, message: "Teacher deleted successfully" });
   } catch (error: any) {
-        console.error(\"[api/teachers/delete] Error:\", error);
+        console.error("[api/teachers/delete] Error:\", error");
     return NextResponse.json({
-          success: false, error: error.message || \"Failed to delete teacher\" }, { status: 500 });
+          success: false, error: error.message || "Failed to delete teacher" }, { status: 500 });
   }
 }
