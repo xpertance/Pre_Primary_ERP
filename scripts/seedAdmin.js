@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import User from "../models/User"; // adjust path if needed
+import User from "../models/User.ts"; // adjust path if needed
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 
