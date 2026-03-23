@@ -80,9 +80,8 @@ export default function Table({
             data.map((row, idx) => (
               <tr
                 key={idx}
-                className={`border-b border-gray-200 transition-colors ${
-                  striped && idx % 2 === 0 ? "bg-gray-50" : "bg-white"
-                } ${hoverable ? "hover:bg-blue-50 cursor-pointer" : ""}`}
+                className={`border-b border-gray-200 transition-colors ${striped && idx % 2 === 0 ? "bg-gray-50" : "bg-white"
+                  } ${hoverable ? "hover:bg-blue-50 cursor-pointer" : ""}`}
                 onClick={() => onRowClick?.(row)}
               >
                 {columns.map((col) => (

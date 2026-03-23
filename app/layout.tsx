@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
 import "react-toastify/dist/ReactToastify.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastContainer } from "react-toastify";
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: 'swap',
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
+  display: 'swap',
 });
 
 export const metadata: Metadata = {
@@ -27,12 +30,13 @@ export const metadata: Metadata = {
     "Teacher Management",
     "Fees Management",
     "Payroll System",
+    "Parent Portal",
+    "Student Tracking",
   ],
   authors: [{ name: "Xpertance" }],
   creator: "Xpertance",
   applicationName: "Xpertance Pre-Primary ERP",
 };
-
 
 export default function RootLayout({
   children,
@@ -40,12 +44,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" className={`${inter.variable} ${manrope.variable}`}>
+      <body className="antialiased">
         <AuthProvider>
-          {children}  
+          {children}
           <ToastContainer
             position="top-right"
             autoClose={4000}

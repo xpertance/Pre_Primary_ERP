@@ -45,9 +45,8 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className} ${
-        disabled || loading ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-      }`}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${fullWidth ? "w-full" : ""} ${className} ${disabled || loading ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+        }`}
     >
       {loading && <span className="inline-block animate-spin">⟳</span>}
       {children}

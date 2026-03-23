@@ -17,7 +17,12 @@ export default function StudentDashboardLayout({
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+          className="fixed inset-0 z-40 lg:hidden animate-modal-backdrop"
+          style={{
+            background: "rgba(15, 23, 42, 0.4)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+          }}
         />
       )}
 
