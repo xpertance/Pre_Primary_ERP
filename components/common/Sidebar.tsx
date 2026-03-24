@@ -393,7 +393,7 @@ export default function Sidebar({
       {!isCollapsed && (
         <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
           <p className="text-xs text-gray-500 text-center font-medium">
-            © 2024 Pre-Primary ERP
+            © 2026 Pre-Primary ERP
           </p>
         </div>
       )}

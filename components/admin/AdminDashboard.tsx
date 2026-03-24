@@ -41,48 +41,69 @@ export default function AdminDashboard() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setError(null);
+        setLoading(true);
+
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
         const today = now.toISOString().split('T')[0];
 
-        const [students, teachers, classes, feeSummary, attendance, admissionsList] = await Promise.all([
-          fetch("/api/students?limit=500").then((r) => r.json()),
-          fetch("/api/teachers").then((r) => r.json()),
-          fetch("/api/classes").then((r) => r.json()),
-          fetch("/api/fees/summary").then((r) => r.json()),
-          fetch(`/api/attendance?startDate=${startOfMonth}&endDate=${today}&limit=1`).then((r) => r.json()),
-          fetch("/api/admission/list").then((r) => r.json()),
+        // Debug: Log data flow 시작
+        console.log("📊 Dashboard: Starting data fetch...");
+
+        const [studentsRes, teachersRes, classesRes, feeSummaryRes, attendanceRes, admissionsRes] = await Promise.all([
+          fetch("/api/students?limit=500"),
+          fetch("/api/teachers"),
+          fetch("/api/classes"),
+          fetch("/api/fees/summary"),
+          fetch(`/api/attendance?startDate=${startOfMonth}&endDate=${today}&limit=1`),
+          fetch("/api/admission/list"),
         ]);
+
+        const students = await studentsRes.json();
+        const teachers = await teachersRes.json();
+        const classes = await classesRes.json();
+        const feeSummary = await feeSummaryRes.json();
+        const attendance = await attendanceRes.json();
+        const admissionsList = await admissionsRes.json();
+
+        // Debug: Log Admissions API response
+        console.log("🎟️ Admissions API Response:", admissionsList);
+
+        if (!admissionsList.success) {
+          console.error("Admissions fetch failed:", admissionsList.error);
+        }
 
         // Calculate new student admissions (joined in current month)
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
 
-        const newAdmissions = students?.students?.filter((s: any) => {
-          if (!s.admissionDate && !s.createdAt) return false;
-          const date = new Date(s.admissionDate || s.createdAt);
-          return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-        }).length || 0;
-
         // Pending applications awaiting approval
         const allAdmissionsArr = admissionsList?.admissions || [];
-        const pendingCount = allAdmissionsArr.filter((a: any) => a.status === 'submitted' || a.status === 'pending').length;
+        const pendingCount = allAdmissionsArr.filter((a: any) =>
+          a.status === 'submitted' || a.status === 'pending'
+        ).length;
+
+        console.log(`📊 Admission Stats: Total=${allAdmissionsArr.length}, Pending=${pendingCount}`);
 
         setStats({
           totalStudents: students?.students?.length ?? students?.total ?? 0,
           totalTeachers: teachers?.teachers?.length ?? teachers?.data?.length ?? 0,
           totalClasses: classes?.classes?.length ?? 0,
-          totalAdmissions: allAdmissionsArr.length, // Display total active applications
-          pendingAdmissions: pendingCount, // Real dynamic value
+          totalAdmissions: allAdmissionsArr.length,
+          pendingAdmissions: pendingCount,
           totalAttendance: attendance?.pagination?.total ?? 0,
-          totalFees: feeSummary?.totalCollected ?? 0, // Real revenue
+          totalFees: feeSummary?.totalCollected ?? 0,
         });
-      } catch (error) {
-        console.error("Failed to fetch stats:", error);
+
+      } catch (err: any) {
+        console.error("Failed to fetch dashboard stats:", err);
+        setError("Unable to load latest stats. Showing empty data.");
       } finally {
         setLoading(false);
       }
@@ -125,12 +146,14 @@ export default function AdminDashboard() {
     {
       title: "Admissions",
       icon: FileText,
-      count: stats.totalAdmissions,
+      count: stats.pendingAdmissions,
       bgColor: "bg-green-50",
       iconBg: "bg-green-500",
       textColor: "text-green-700",
       href: "/admission",
-      description: `${stats.pendingAdmissions} pending review`,
+      description: stats.pendingAdmissions > 0
+        ? `${stats.pendingAdmissions} pending review`
+        : "No pending applications",
     },
     {
       title: "Attendance",
@@ -157,6 +180,22 @@ export default function AdminDashboard() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <Breadcrumbs items={[{ label: "Dashboard" }]} />
+
+      {/* Error State */}
+      {error && (
+        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <p className="font-medium text-sm">{error}</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs font-bold underline hover:no-underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Header */}
       <div className="mt-6 mb-8">

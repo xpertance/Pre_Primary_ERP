@@ -2,7 +2,7 @@
 
 @theme {
   --color-primary: #FF6B00;
-  /* Vibrant Orange */
+  /* Radiant Orange */
   --color-primary-light: #FF8533;
   --color-primary-dark: #E66000;
 
@@ -15,6 +15,52 @@
 
   --color-surface: #FFFFFF;
   --color-surface-dark: #F8FAFC;
+
+  /* Global Typography */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --font-heading-var: var(--font-manrope);
+  --font-body-var: var(--font-inter);
+}
+
+body {
+  font-family: var(--font-body-var), sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #334155; /* slate-700 */
+}
+
+h1, h2, h3, h4, h5, h6, 
+.card-title, .section-header, .page-title {
+  font-family: var(--font-heading-var), sans-serif;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #0f172a; /* slate-900 */
+}
+
+/* UI Elements & Controls */
+input, select, textarea, button, label, table, .sidebar-link {
+  font-family: var(--font-body-var), sans-serif;
+}
+
+label {
+  font-weight: 500;
+  color: #475569; /* slate-600 */
+}
+
+input::placeholder {
+  font-family: var(--font-body-var), sans-serif;
+  opacity: 0.5;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0; /* slate-200 */
+  border-radius: 10px;
 }
 
 /* Hide native scrollbars while preserving scroll functionality */
@@ -50,4 +96,29 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Modal Animations */
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-content-in {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95);
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+}
+
+.animate-modal-backdrop {
+  animation: modal-backdrop-in 0.3s ease-out forwards;
+}
+
+.animate-modal-content {
+  animation: modal-content-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }

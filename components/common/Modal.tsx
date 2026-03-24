@@ -1,5 +1,5 @@
 "use client";
-import React, { ReactNode } from "react";
+import React, { ReactNode, useEffect } from "react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,7 +10,26 @@ interface ModalProps {
   size?: "sm" | "md" | "lg" | "xl";
 }
 
-export default function Modal({ isOpen, onClose, title, children, footer, size = "md" }: ModalProps) {
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  footer,
+  size = "md",
+}: ModalProps) {
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
   const sizeClasses = {
     sm: "max-w-sm",
     md: "max-w-md",
@@ -21,22 +40,41 @@ export default function Modal({ isOpen, onClose, title, children, footer, size =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className={`bg-white rounded-lg shadow-xl ${sizeClasses[size]} w-full mx-4`}>
+    <div
+      className="fixed inset-0 flex items-center justify-center z-[100] p-4 animate-modal-backdrop overflow-y-auto"
+      style={{
+        background: "rgba(15, 23, 42, 0.4)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}
+      onClick={(e) => {
+        // Close modal when clicking outside the content area
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className={`bg-white rounded-2xl ${sizeClasses[size]} w-full mx-auto relative animate-modal-content mb-auto mt-auto`}
+        style={{
+          boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {title && (
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-white/50">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-xl leading-none"
+              className="w-10 h-10 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all text-2xl leading-none"
             >
               ×
             </button>
           </div>
         )}
-        <div className="px-6 py-4 max-h-96 overflow-y-auto">{children}</div>
+        <div className="px-6 py-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
+          {children}
+        </div>
         {footer && (
-          <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50">
             {footer}
           </div>
         )}
