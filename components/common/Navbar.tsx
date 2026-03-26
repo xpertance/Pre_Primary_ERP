@@ -6,7 +6,6 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   Bell,
   Search,
-  Settings,
   LogOut,
   User,
   ChevronDown,
@@ -282,13 +281,7 @@ export default function Navbar({
             )}
           </div>
 
-          {/* Quick Settings */}
-          <Link
-            href="/dashboard/settings"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors group"
-          >
-            <Settings className="w-5 h-5 text-gray-600 group-hover:text-orange-500 transition-colors" />
-          </Link>
+
 
           {/* Divider */}
           <div className="w-px h-8 bg-gray-200"></div>
@@ -344,16 +337,7 @@ export default function Navbar({
                     <span className="font-medium">My Profile</span>
                   </Link>
 
-                  <Link
-                    href="/dashboard/settings"
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                      <Settings className="w-4 h-4 text-blue-600" />
-                    </div>
-                    <span className="font-medium">Settings</span>
-                  </Link>
+
                 </div>
 
                 {/* Logout */}

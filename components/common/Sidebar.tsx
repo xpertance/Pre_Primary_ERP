@@ -284,8 +284,9 @@ export default function Sidebar({
         <ul className={isCollapsed ? "space-y-2 py-4" : "space-y-1 px-3 py-4"}>
           {filteredMenu.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              pathname === item.path || pathname?.startsWith(item.path + "/");
+            const isActive = item.module === "dashboard"
+              ? pathname === item.path
+              : pathname === item.path || pathname?.startsWith(item.path + "/");
 
             return (
               <li key={item.path}>

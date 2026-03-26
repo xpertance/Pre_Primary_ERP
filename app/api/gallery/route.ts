@@ -14,12 +14,19 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
-    const limit = Math.max(1, Math.min(100, parseInt(url.searchParams.get("limit") || "10")));
+    const limit = Math.max(1, Math.min(1000, parseInt(url.searchParams.get("limit") || "500")));
 
     const filter: Record<string, unknown> = {};
-    const status = url.searchParams.get("status");
-    if (status === "published") filter.isPublished = true;
-    if (status === "draft") filter.isPublished = false;
+    
+    // Safety: If user is not admin, they should ONLY see published albums
+    if (user.role !== "admin") {
+      filter.isPublished = true;
+    } else {
+      // Admins can filter by choice
+      const status = url.searchParams.get("status");
+      if (status === "published") filter.isPublished = true;
+      if (status === "draft") filter.isPublished = false;
+    }
 
     const skip = (page - 1) * limit;
 

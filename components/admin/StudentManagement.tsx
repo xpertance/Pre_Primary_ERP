@@ -84,6 +84,8 @@ export default function StudentManagement() {
   const [selectedClass, setSelectedClass] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingStudent, setDeletingStudent] = useState<Student | null>(null);
 
   // --- Fee assignment at enrollment ---
   interface FeeStructureForClass {
@@ -278,6 +280,12 @@ export default function StudentManagement() {
       return;
     }
 
+    // Validation: Parent names must not be empty
+    if (formData.parents.some((p) => !p.name.trim())) {
+      showToast.error("Parent Name is required");
+      return;
+    }
+
     try {
       const method = editingStudent ? "PUT" : "POST";
       const url = editingStudent ? `/api/students/${editingStudent._id}` : "/api/students";
@@ -365,7 +373,12 @@ export default function StudentManagement() {
         ? new Date(student.admissionDate).toISOString().split("T")[0]
         : "",
       parents: student.parents?.length
-        ? student.parents
+        ? student.parents.map(p => ({
+            name: p.name || "",
+            phone: p.phone || "",
+            email: p.email || "",
+            relation: p.relation || ""
+          }))
         : [{ name: "", phone: "", email: "", relation: "" }],
       medical: {
         allergies: student.medical?.allergies || [],
@@ -379,13 +392,19 @@ export default function StudentManagement() {
     setModalOpen(true);
   };
 
-  const handleDeleteStudent = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this student?")) return;
+  const handleDeleteStudent = (student: Student) => {
+    setDeletingStudent(student);
+    setShowDeleteModal(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!deletingStudent) return;
     try {
-      const res = await fetch(`/api/students/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/students/${deletingStudent._id}`, { method: "DELETE" });
       if (res.ok) {
         showToast.success("Student deleted successfully");
+        setShowDeleteModal(false);
+        setDeletingStudent(null);
         fetchStudents();
       }
     } catch {
@@ -614,7 +633,7 @@ export default function StudentManagement() {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDeleteStudent((row as Student)._id)}
+                  onClick={() => handleDeleteStudent(row as Student)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -1064,6 +1083,53 @@ export default function StudentManagement() {
               />
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingStudent(null);
+        }}
+        title="Confirm Deletion"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletingStudent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Student?</h3>
+          <p className="text-gray-500 mb-2">
+            Are you sure you want to delete{" "}
+            <span className="font-bold text-red-600">
+              {deletingStudent?.firstName} {deletingStudent?.lastName}
+            </span>
+            ?
+          </p>
+          <p className="text-xs text-gray-400">
+            This action cannot be undone. All student records, attendance, and fee history will be permanently removed.
+          </p>
         </div>
       </Modal>
     </div>

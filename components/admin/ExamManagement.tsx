@@ -88,6 +88,8 @@ export default function ExamManagement() {
   const [statusFilter, setStatusFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingExam, setEditingExam] = useState<Exam | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingExam, setDeletingExam] = useState<Exam | null>(null);
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -261,7 +263,7 @@ export default function ExamManagement() {
     setFormData({
       name: exam.name,
       description: exam.description || "",
-      classId: exam.classId._id,
+      classId: exam.classId?._id || "",
       subjects: exam.subjects,
       startDate: new Date(exam.startDate).toISOString().split("T")[0],
       endDate: new Date(exam.endDate).toISOString().split("T")[0],
@@ -278,13 +280,20 @@ export default function ExamManagement() {
     setModalOpen(true);
   };
 
-  const handleDeleteExam = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this exam?")) return;
+  const handleDeleteExam = (exam: Exam) => {
+    setDeletingExam(exam);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingExam) return;
     try {
-      const res = await fetch(`/api/exams?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/exams?id=${deletingExam._id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
         showToast.success("Exam deleted successfully");
+        setShowDeleteModal(false);
+        setDeletingExam(null);
         fetchExams();
       }
     } catch (error) {
@@ -338,6 +347,7 @@ export default function ExamManagement() {
       label: "Class",
       render: (value: unknown) => {
         const classData = value as Class;
+        if (!classData) return <span className="text-red-500 italic">Class Deleted</span>;
         return `${classData.name} - ${classData.section}`;
       },
     },
@@ -518,7 +528,7 @@ export default function ExamManagement() {
                 Edit
               </button>
               <button
-                onClick={() => handleDeleteExam((row as Exam)._id)}
+                onClick={() => handleDeleteExam(row as Exam)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -862,6 +872,53 @@ export default function ExamManagement() {
               </div>
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingExam(null);
+        }}
+        title="Confirm Deletion"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletingExam(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Exam?</h3>
+          <p className="text-gray-500 mb-2">
+            Are you sure you want to delete{" "}
+            <span className="font-bold text-red-600">
+              {deletingExam?.name}
+            </span>
+            ?
+          </p>
+          <p className="text-xs text-gray-400">
+            This action cannot be undone. All exam schedules, results, and associated data will be permanently removed.
+          </p>
         </div>
       </Modal>
     </div>

@@ -64,6 +64,8 @@ export default function TeacherManagement() {
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [selectedClass, setSelectedClass] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
 
 
   const [formData, setFormData] = useState<{
@@ -192,12 +194,54 @@ export default function TeacherManagement() {
 
     try {
       setSaving(true);
+
+      const cleanedClasses = formData.classes
+        .filter(c => c.classId && c.classId.trim() !== "")
+        .map(c => ({ classId: c.classId, section: c.section || "" }));
+
+      const cleanedSubjects = formData.subjects.filter(s => s.trim() !== "");
+      const cleanedQualifications = formData.qualifications.filter(q => q.trim() !== "");
+
+      if (editingTeacher) {
+        const currentData = {
+          name: editingTeacher.name,
+          email: editingTeacher.email,
+          phone: editingTeacher.phone || "",
+          subjects: editingTeacher.subjects || [],
+          classes: (editingTeacher.classes || []).map((c: any) => ({
+            classId: typeof c.classId === "object" ? c.classId._id : c.classId,
+            section: c.section || ""
+          })),
+          qualifications: editingTeacher.qualifications || [],
+        };
+
+        const hasChanged =
+          formData.name.trim() !== currentData.name.trim() ||
+          formData.email.trim() !== currentData.email.trim() ||
+          formData.phone.trim() !== currentData.phone.trim() ||
+          formData.password !== "" ||
+          JSON.stringify([...cleanedSubjects].sort()) !== JSON.stringify([...currentData.subjects].sort()) ||
+          JSON.stringify([...cleanedQualifications].sort()) !== JSON.stringify([...currentData.qualifications].sort()) ||
+          JSON.stringify(cleanedClasses) !== JSON.stringify(currentData.classes);
+
+        if (!hasChanged) {
+          showToast.info("No changes detected");
+          setModalOpen(false);
+          setEditingTeacher(null);
+          setSaving(false);
+          return;
+        }
+      }
+
       const method = editingTeacher ? "PUT" : "POST";
       const url = editingTeacher ? `/api/teachers/${editingTeacher._id}` : "/api/teachers";
 
-      // Clean up classes mapping: filter out entries with empty classId
-      const cleanedClasses = formData.classes.filter(c => c.classId && c.classId.trim() !== "");
-      const sanitizedData = { ...formData, classes: cleanedClasses };
+      const sanitizedData = { 
+        ...formData, 
+        classes: cleanedClasses,
+        subjects: cleanedSubjects,
+        qualifications: cleanedQualifications
+      };
 
       // Remove password if it's empty string for editing
       if (editingTeacher && !sanitizedData.password) {
@@ -247,18 +291,28 @@ export default function TeacherManagement() {
       password: "",
       phone: teacher.phone || "",
       subjects: teacher.subjects || [],
-      classes: teacher.classes || [],
+      classes: (teacher.classes || []).map((c: any) => ({
+        classId: typeof c.classId === "object" ? c.classId._id : c.classId,
+        section: c.section || "",
+      })),
       qualifications: teacher.qualifications || [],
     });
     setModalOpen(true);
   };
 
-  const handleDeleteTeacher = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this teacher?")) return;
+  const handleDeleteTeacher = (teacher: Teacher) => {
+    setDeletingTeacher(teacher);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingTeacher) return;
     try {
-      const res = await fetch(`/api/teachers/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/teachers/${deletingTeacher._id}`, { method: "DELETE" });
       if (res.ok) {
         showToast.success("Teacher deleted successfully");
+        setShowDeleteModal(false);
+        setDeletingTeacher(null);
         fetchTeachers();
       } else {
         const errorData = await res.json();
@@ -472,7 +526,7 @@ export default function TeacherManagement() {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDeleteTeacher((row as Teacher)._id)}
+                  onClick={() => handleDeleteTeacher(row as Teacher)}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -663,6 +717,53 @@ export default function TeacherManagement() {
               </button>
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingTeacher(null);
+        }}
+        title="Confirm Deletion"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletingTeacher(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Teacher?</h3>
+          <p className="text-gray-500 mb-2">
+            Are you sure you want to delete{" "}
+            <span className="font-bold text-red-600">
+              {deletingTeacher?.name}
+            </span>
+            ?
+          </p>
+          <p className="text-xs text-gray-400">
+            This action cannot be undone. All teacher records, assigned classes, and activity history will be permanently removed.
+          </p>
         </div>
       </Modal>
     </div>

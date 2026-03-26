@@ -98,6 +98,8 @@ export default function TransportManagement() {
   const [statusFilter, setStatusFilter] = useState("active");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<TransportRoute | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingRoute, setDeletingRoute] = useState<TransportRoute | null>(null);
 
   const [formData, setFormData] = useState<{
     routeName: string;
@@ -298,13 +300,20 @@ export default function TransportManagement() {
     setModalOpen(true);
   };
 
-  const handleDeleteRoute = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this route?")) return;
+  const handleDeleteRoute = (route: TransportRoute) => {
+    setDeletingRoute(route);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingRoute) return;
     try {
-      const res = await fetch(`/api/transport?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/transport?id=${deletingRoute._id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
         showToast.success("Route deleted successfully");
+        setShowDeleteModal(false);
+        setDeletingRoute(null);
         fetchRoutes();
       }
     } catch (error) {
@@ -561,7 +570,7 @@ export default function TransportManagement() {
                 Edit
               </button>
               <button
-                onClick={() => handleDeleteRoute((row as TransportRoute)._id)}
+                onClick={() => handleDeleteRoute(row as TransportRoute)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -901,6 +910,53 @@ export default function TransportManagement() {
               </div>
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingRoute(null);
+        }}
+        title="Confirm Deletion"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletingRoute(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Route?</h3>
+          <p className="text-gray-500 mb-2">
+            Are you sure you want to delete{" "}
+            <span className="font-bold text-red-600">
+              {deletingRoute?.routeName}
+            </span>
+            ?
+          </p>
+          <p className="text-xs text-gray-400">
+            This action cannot be undone. All transport route data, including stops and vehicle assignments, will be permanently removed.
+          </p>
         </div>
       </Modal>
     </div>

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Badge from "@/components/common/Badge";
 import { showToast } from "@/lib/toast";
-import { ArrowLeft, Calendar, MapPin, ImageIcon, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, ImageIcon, Loader2, Video, Play } from "lucide-react";
 
 interface GalleryItem {
     _id: string;
@@ -11,7 +11,7 @@ interface GalleryItem {
     albumName: string;
     category: string;
     description?: string;
-    images: Array<{ url: string; caption: string }>;
+    images: Array<{ url: string; caption: string; type: "image" | "video" }>;
     eventDate: string;
     eventLocation?: string;
     isPublished: boolean;
@@ -116,8 +116,8 @@ export default function GalleryDetailPage() {
                         </div>
                         <div className="flex items-center gap-2">
                             <ImageIcon className="w-4 h-4 text-purple-500" />
-                            <span className="font-medium">Total Photos:</span>
-                            {gallery.images?.length || 0}
+                            <span className="font-medium">Media:</span>
+                            {gallery.images?.filter(i => i.type !== "video").length || 0} Photos, {gallery.images?.filter(i => i.type === "video").length || 0} Videos
                         </div>
                     </div>
 
@@ -129,27 +129,54 @@ export default function GalleryDetailPage() {
                     )}
                 </div>
 
-                {/* Images Grid */}
+                {/* Media Grid */}
                 <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
                     <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
                         <ImageIcon className="w-5 h-5 text-gray-500" />
-                        Photo Gallery
+                        Media Gallery
                     </h2>
 
                     {gallery.images && gallery.images.length > 0 ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
                             {gallery.images.map((img, index) => (
-                                <div key={index} className="group relative break-inside-avoid">
-                                    <div className="rounded-lg overflow-hidden border border-gray-200 bg-gray-50 aspect-square cursor-pointer hover:shadow-md transition-all">
-                                        <img
-                                            src={img.url}
-                                            alt={img.caption || `Photo ${index + 1}`}
-                                            loading="lazy"
-                                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                                        />
+                                <div key={index} className="group relative">
+                                    <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 aspect-square cursor-pointer hover:shadow-lg transition-all relative group">
+                                        {img.type === "video" ? (
+                                            <div className="w-full h-full relative">
+                                                <video
+                                                    src={img.url}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                                                    <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                                                        <Play className="w-6 h-6 text-purple-600 fill-purple-600 ml-1" />
+                                                    </div>
+                                                </div>
+                                                {/* Play on click - full screen or simple overlay */}
+                                                <button 
+                                                    onClick={() => window.open(img.url, '_blank')}
+                                                    className="absolute inset-0 w-full h-full opacity-0"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <img
+                                                src={img.url}
+                                                alt={img.caption || `Photo ${index + 1}`}
+                                                loading="lazy"
+                                                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                                                onClick={() => window.open(img.url, '_blank')}
+                                            />
+                                        )}
+                                        
+                                        {img.type === "video" && (
+                                            <div className="absolute top-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold rounded-md flex items-center gap-1 uppercase tracking-wider">
+                                                <Video className="w-3 h-3" />
+                                                Video
+                                            </div>
+                                        )}
                                     </div>
                                     {img.caption && (
-                                        <div className="mt-2 text-sm text-gray-600 truncate px-1" title={img.caption}>
+                                        <div className="mt-3 text-sm font-medium text-gray-700 truncate px-1" title={img.caption}>
                                             {img.caption}
                                         </div>
                                     )}
@@ -159,7 +186,7 @@ export default function GalleryDetailPage() {
                     ) : (
                         <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 text-gray-500">
                             <ImageIcon className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                            <p className="font-medium">No photos in this album</p>
+                            <p className="font-medium">No media in this album</p>
                         </div>
                     )}
                 </div>

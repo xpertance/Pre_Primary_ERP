@@ -97,6 +97,8 @@ export default function EventManagement() {
   const [statusFilter, setStatusFilter] = useState("published");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingEvent, setDeletingEvent] = useState<Event | null>(null);
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -277,13 +279,20 @@ export default function EventManagement() {
     setModalOpen(true);
   };
 
-  const handleDeleteEvent = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this event?")) return;
+  const handleDeleteEvent = (event: Event) => {
+    setDeletingEvent(event);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingEvent) return;
     try {
-      const res = await fetch(`/api/events?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/events?id=${deletingEvent._id}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
         showToast.success("Event deleted successfully");
+        setShowDeleteModal(false);
+        setDeletingEvent(null);
         fetchEvents();
       }
     } catch (error) {
@@ -501,7 +510,7 @@ export default function EventManagement() {
                 Edit
               </button>
               <button
-                onClick={() => handleDeleteEvent((row as Event)._id)}
+                onClick={() => handleDeleteEvent(row as Event)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -807,6 +816,53 @@ export default function EventManagement() {
               </span>
             </label>
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingEvent(null);
+        }}
+        title="Confirm Deletion"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletingEvent(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Event?</h3>
+          <p className="text-gray-500 mb-2">
+            Are you sure you want to delete{" "}
+            <span className="font-bold text-red-600">
+              {deletingEvent?.title}
+            </span>
+            ?
+          </p>
+          <p className="text-xs text-gray-400">
+            This action cannot be undone. All event details, announcements, and attachments will be permanently removed.
+          </p>
         </div>
       </Modal>
     </div>

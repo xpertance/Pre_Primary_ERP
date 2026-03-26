@@ -63,6 +63,8 @@ export default function ClassManagement() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingClass, setDeletingClass] = useState<Class | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -124,6 +126,32 @@ export default function ClassManagement() {
 
     try {
       setSaving(true);
+
+      if (editingClass) {
+        const currentData = {
+          name: editingClass.name,
+          section: editingClass.section,
+          roomNumber: editingClass.roomNumber || "",
+          teachers: editingClass.teachers?.map((t) => t._id) || [],
+          students: editingClass.students?.map((s) => s._id) || [],
+        };
+
+        const hasChanged =
+          formData.name !== currentData.name ||
+          formData.section !== currentData.section ||
+          formData.roomNumber !== currentData.roomNumber ||
+          JSON.stringify([...formData.teachers].sort()) !== JSON.stringify([...currentData.teachers].sort()) ||
+          JSON.stringify([...formData.students].sort()) !== JSON.stringify([...currentData.students].sort());
+
+        if (!hasChanged) {
+          showToast.info("No changes detected");
+          setModalOpen(false);
+          setEditingClass(null);
+          setSaving(false);
+          return;
+        }
+      }
+
       const method = editingClass ? "PUT" : "POST";
       const url = editingClass ? `/api/classes/${editingClass._id}` : "/api/classes";
 
@@ -166,12 +194,19 @@ export default function ClassManagement() {
     setModalOpen(true);
   };
 
-  const handleDeleteClass = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this class?")) return;
+  const handleDeleteClass = (cls: Class) => {
+    setDeletingClass(cls);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingClass) return;
     try {
-      const res = await fetch(`/api/classes/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/classes/${deletingClass._id}`, { method: "DELETE" });
       if (res.ok) {
         showToast.success("Class deleted successfully");
+        setShowDeleteModal(false);
+        setDeletingClass(null);
         fetchClasses();
       }
     } catch (error) {
@@ -383,7 +418,7 @@ export default function ClassManagement() {
                 Edit
               </button>
               <button
-                onClick={() => handleDeleteClass((row as Class)._id)}
+                onClick={() => handleDeleteClass(row as Class)}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
               >
                 <Trash2 className="w-3.5 h-3.5" />
@@ -572,6 +607,53 @@ export default function ClassManagement() {
               </div>
             )}
           </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setDeletingClass(null);
+        }}
+        title="Confirm Deletion"
+        size="sm"
+        footer={
+          <div className="flex gap-3 justify-end w-full">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setDeletingClass(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <button
+              onClick={confirmDelete}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        }
+      >
+        <div className="flex flex-col items-center text-center p-2">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8 text-red-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Class?</h3>
+          <p className="text-gray-500 mb-2">
+            Are you sure you want to delete{" "}
+            <span className="font-bold text-red-600">
+              {deletingClass?.name} - Section {deletingClass?.section}
+            </span>
+            ?
+          </p>
+          <p className="text-xs text-gray-400">
+            This action cannot be undone. All classes data will be permanently removed.
+          </p>
         </div>
       </Modal>
     </div>

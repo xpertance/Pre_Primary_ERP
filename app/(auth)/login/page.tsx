@@ -3,7 +3,7 @@
 import { useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { User, Lock, BookOpen, Users, GraduationCap, Baby, Eye, EyeOff } from "lucide-react";
+import { User, Lock, BookOpen, Users, GraduationCap, Baby, Eye, EyeOff, ChevronDown } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
   const slides = [
     {
@@ -159,21 +160,62 @@ export default function LoginPage() {
             {/* Role Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Role
+                Select Your Role
               </label>
               <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  {roleIcons[role as keyof typeof roleIcons]}
-                </div>
-                <select
-                  name="role"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                <button
+                  type="button"
+                  onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                  className={`w-full flex items-center justify-between pl-10 pr-4 py-3 bg-white border ${roleDropdownOpen ? 'border-primary ring-2 ring-primary/20' : 'border-gray-300 hover:border-primary-light'} rounded-lg transition-all text-left outline-none`}
                 >
-                  <option value="admin">Admin</option>
-                  <option value="teacher">Teacher</option>
-                </select>
+                  <div className="flex items-center gap-3">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-primary">
+                      {roleIcons[role as keyof typeof roleIcons]}
+                    </div>
+                    <span className="text-gray-800 font-medium capitalize">{role}</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${roleDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {roleDropdownOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setRoleDropdownOpen(false)}
+                    />
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                      {[
+                        { id: 'admin', label: 'Administrator', desc: 'Full system management', icon: <GraduationCap className="w-5 h-5" />, color: 'bg-orange-50 text-orange-600' },
+                        { id: 'teacher', label: 'Teacher', desc: 'Manage classes & students', icon: <BookOpen className="w-5 h-5" />, color: 'bg-purple-50 text-purple-600' },
+                        { id: 'parent', label: 'Parent', desc: 'Track child progress', icon: <Users className="w-5 h-5" />, color: 'bg-blue-50 text-blue-600' },
+                        { id: 'student', label: 'Student', desc: 'View schedule & results', icon: <Baby className="w-5 h-5" />, color: 'bg-green-50 text-green-600' }
+                      ].map((option) => (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => {
+                            setRole(option.id);
+                            setRoleDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-4 px-4 py-3 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0 ${role === option.id ? 'bg-primary/5' : ''}`}
+                        >
+                          <div className={`w-10 h-10 rounded-lg ${option.color} flex items-center justify-center flex-shrink-0 shadow-sm`}>
+                            {option.icon}
+                          </div>
+                          <div>
+                            <p className={`text-sm font-bold ${role === option.id ? 'text-primary' : 'text-gray-800'}`}>
+                              {option.label}
+                            </p>
+                            <p className="text-xs text-gray-500">{option.desc}</p>
+                          </div>
+                          {role === option.id && (
+                            <div className="ml-auto w-2 h-2 bg-primary rounded-full" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 

@@ -9,6 +9,7 @@ const GallerySchema = new mongoose.Schema(
     images: [
       {
         url: { type: String, required: true },
+        type: { type: String, enum: ["image", "video"], default: "image" },
         caption: String,
         uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         uploadedAt: { type: Date, default: Date.now },

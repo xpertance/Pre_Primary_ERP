@@ -70,11 +70,16 @@ export async function PUT(
       for (const key of Object.keys(obj)) {
         const val = obj[key];
         if (typeof val === "string") {
-          copy[key] = val.trim() === "" ? undefined : val;
+          // Do not convert required fields to undefined
+          if (key === "name" || key === "firstName") {
+            copy[key] = val.trim();
+          } else {
+            copy[key] = val.trim() === "" ? undefined : val;
+          }
         } else if (Array.isArray(val)) {
-          copy[key] = val.map((v) =>
-            typeof v === "string" && v.trim() === "" ? undefined : sanitize(v)
-          );
+          copy[key] = val.map((v) => 
+                typeof v === "object" ? sanitize(v) : (typeof v === "string" && v.trim() === "" ? undefined : v)
+              );
         } else if (val && typeof val === "object") {
           copy[key] = sanitize(val);
         } else {

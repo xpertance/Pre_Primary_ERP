@@ -14,9 +14,12 @@ export async function POST(req: Request) {
         }
 
         // Validate file type
-        if (!file.type.startsWith("image/")) {
+        const isImage = file.type.startsWith("image/");
+        const isVideo = file.type.startsWith("video/");
+
+        if (!isImage && !isVideo) {
             return NextResponse.json(
-                { success: false, error: "Only image files are allowed" },
+                { success: false, error: "Only image and video files are allowed" },
                 { status: 400 }
             );
         }
