@@ -182,8 +182,6 @@ export default function LandingPage() {
   ];
 
   const stats = [
-    { number: "500+", label: "Schools Trust Us" },
-    { number: "50K+", label: "Students Managed" },
     { number: "99.9%", label: "Uptime Guarantee" },
     { number: "24/7", label: "Support Available" }
   ];
@@ -297,7 +295,7 @@ export default function LandingPage() {
                     }`} />
                 </a>
               ))}
-              <Link href="/login" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium">
+              <Link href="/login" className="hidden px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors font-medium">
                 Get Started
               </Link>
             </div>
@@ -333,7 +331,7 @@ export default function LandingPage() {
                     {item.label}
                   </a>
                 ))}
-                <Link href="/login" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-center">
+                <Link href="/login" className="hidden px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark text-center">
                   Get Started
                 </Link>
               </div>
@@ -354,13 +352,7 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-2 gap-10 items-center">
 
             {/* Left Content */}
-            <div>
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-full border border-orange-100 mb-8">
-                <Zap className="w-4 h-4 text-primary" />
-                <span className="text-sm font-semibold text-slate-700">Trusted by 500+ schools</span>
-              </div>
-
+            <div className="pt-16">
               {/* Heading */}
               <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-bold mb-6 leading-[1.2] tracking-tight text-slate-900">
                 Complete School<br />
@@ -399,23 +391,8 @@ export default function LandingPage() {
                 />
               </div>
 
-              {/* Floating Card — 50K+ Students (top-right, OUTSIDE the image card) */}
-              <div
-                className="absolute -top-5 -right-5 bg-secondary rounded-2xl px-6 py-5 shadow-2xl flex flex-col items-center justify-center animate-bounce cursor-default z-10"
-                style={{ animationDuration: '4s', minWidth: '110px' }}
-              >
-                <span className="text-2xl font-black text-white leading-none">50K+</span>
-                <span className="text-xs font-bold text-white/90 mt-1">Students</span>
-              </div>
 
-              {/* Floating Card — 99.9% Uptime (bottom-left, overlapping corner) */}
-              <div
-                className="absolute -bottom-5 left-8 bg-primary rounded-2xl px-7 py-5 shadow-2xl flex flex-col items-center justify-center animate-bounce cursor-default z-10"
-                style={{ animationDuration: '5s', minWidth: '120px' }}
-              >
-                <span className="text-2xl font-black text-white leading-none">99.9%</span>
-                <span className="text-xs font-bold text-white/90 mt-1">Uptime</span>
-              </div>
+
             </div>
 
           </div>
@@ -425,7 +402,7 @@ export default function LandingPage() {
       {/* Stats Section */}
       <section className="py-16 bg-white border-y border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 justify-items-center gap-8">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
                 <div className="text-4xl font-bold text-gray-900 mb-2">{stat.number}</div>
