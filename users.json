@@ -1,0 +1,199 @@
+[
+  {
+    "_id": "6993166599c3c29d1b127612",
+    "name": "Harsh Ladukar",
+    "email": "harshladukar@gmail.com",
+    "password": "$2b$10$VWlbTktcrWF0COcL8byCKeZtIuN/Jo0kOFTuEHo7vDMzOjnrs2zfq",
+    "role": "admin",
+    "__v": 0,
+    "resetOTP": "822118",
+    "resetOTPExpires": "2026-03-17T07:15:57.238Z"
+  },
+  {
+    "_id": "69940715e8d3447a5a3a4b7e",
+    "name": "Super Admin",
+    "email": "admin@school.com",
+    "password": "$2b$10$9/0W3KkSii6vvn6ooamQ2OQGfRpllU9Bwleh612bpBN3SftMXMBem",
+    "role": "admin",
+    "__v": 0,
+    "salary_config": {
+      "base_salary": 10000,
+      "housing_allowance": 200,
+      "other_allowances": 500,
+      "pf_deduction": 650,
+      "tax_deduction": 600
+    }
+  },
+  {
+    "_id": "69948ad99ce1d17e40c70d25",
+    "name": "Rohan Gupta",
+    "email": "rohangadekar07@gmail.com",
+    "password": "$2b$10$UklXrVDuKSLprLffRtkPfey0o7mCTaEsiWG8B.zvDC4VrGIrN9dya",
+    "role": "parent",
+    "__v": 0,
+    "studentId": "69948ad99ce1d17e40c70d2a",
+    "resetOTP": "778719",
+    "resetOTPExpires": "2026-03-22T12:04:35.932Z"
+  },
+  {
+    "_id": "69bcf7d6d6628ab854c19f81",
+    "studentId": "69b25d5b339a56efd467347d",
+    "role": "parent",
+    "__v": 0,
+    "email": "sunita.verma@gmail.com",
+    "name": "sunita",
+    "password": "$2b$10$D8eXMk03HkuQ.pka5FwefemPDtQgLngpO8gzVC9DMbzMRXYr7KFBG"
+  },
+  {
+    "_id": "69bef8f6d6628ab854c1d171",
+    "email": "teacher@school.com",
+    "__v": 0,
+    "name": "John Doe",
+    "password": "$2b$10$F/49Df6XUFL/gFhe/EFoaulI3eMfze/Z7TcQVBoYO4ZDl/rvCZFLO",
+    "role": "teacher"
+  },
+  {
+    "_id": "69bef8f6d6628ab854c1d172",
+    "email": "student@school.com",
+    "__v": 0,
+    "name": "Jane Smith",
+    "password": "$2b$10$n.2KTAYBSWO2dLhWYNPMauCrIKRVEZrvXMSvmJeo1ySPtjxNZsoQm",
+    "role": "student",
+    "studentId": "69bef96b9fe89eea47e72fba"
+  },
+  {
+    "_id": "69bf3f6fd6628ab854c1d3d4",
+    "email": "admin123@school.com",
+    "__v": 0,
+    "name": "Super Admin",
+    "password": "$2b$10$yZGv5nlq..KYjG7/DiK4auJjlCBuRHnb38NdNj11Q2LCbZPl6uJne",
+    "role": "admin",
+    "school_id": null,
+    "updatedAt": "2026-03-26T07:36:50.279Z"
+  },
+  {
+    "_id": "69c4ce7a3287afb44409f25e",
+    "name": "Ramesh Gupta",
+    "email": "ramesh.gupta@parent.com",
+    "password": "$2b$10$gfU2nuGqPbjw9sEEp3iOQut4QNRO7VeJlfGXEnTfHGhggNKhkURhS",
+    "role": "parent",
+    "__v": 0,
+    "studentId": "69c4ce7b3287afb44409f263"
+  },
+  {
+    "_id": "69c4ce7a3287afb44409f25f",
+    "name": "Sunita Verma",
+    "email": "sunita.verma@parent.com",
+    "password": "$2b$10$gfU2nuGqPbjw9sEEp3iOQut4QNRO7VeJlfGXEnTfHGhggNKhkURhS",
+    "role": "parent",
+    "__v": 0,
+    "studentId": "69c4ce7b3287afb44409f265"
+  },
+  {
+    "_id": "69c4ce7a3287afb44409f260",
+    "name": "Vikram Singh",
+    "email": "vikram.singh@parent.com",
+    "password": "$2b$10$gfU2nuGqPbjw9sEEp3iOQut4QNRO7VeJlfGXEnTfHGhggNKhkURhS",
+    "role": "parent",
+    "__v": 0,
+    "studentId": "69c4ce7b3287afb44409f267"
+  },
+  {
+    "_id": "69c4ce7a3287afb44409f261",
+    "name": "Anjali Mehta",
+    "email": "anjali.mehta@parent.com",
+    "password": "$2b$10$gfU2nuGqPbjw9sEEp3iOQut4QNRO7VeJlfGXEnTfHGhggNKhkURhS",
+    "role": "parent",
+    "__v": 0,
+    "studentId": "69c4ce7b3287afb44409f269"
+  },
+  {
+    "_id": "69c4d5d97d57d2bf98ed8f3e",
+    "name": "Office Staff",
+    "email": "staff@school.com",
+    "password": "$2b$10$J.8Y1.UxEfw207aRYO7UKODPc5WPxVtY2TcvcjLisFk8uhimLOwDy",
+    "role": "staff",
+    "__v": 0,
+    "school_id": null,
+    "updatedAt": "2026-03-26T07:36:50.455Z"
+  },
+  {
+    "_id": "69c4d5d97d57d2bf98ed8f42",
+    "name": "School Accountant",
+    "email": "account@school.com",
+    "password": "$2b$10$sOdyuNNaKbrNhdeZjBOleOxuVifXuQFjFwFHb250m4uHNmlZuzSwW",
+    "role": "accountant",
+    "__v": 0,
+    "school_id": null,
+    "updatedAt": "2026-03-26T07:36:50.664Z"
+  },
+  {
+    "_id": "69c4ffb6ef4f061a32944131",
+    "name": "undefined undefined",
+    "email": "adm2026-0002@school.com",
+    "password": "$2b$10$89MX7eXy1.ICLItV2MCqG.CwxVL/5K.93vidisQeQ1xIG5PWEyy2q",
+    "role": "student",
+    "__v": 0
+  },
+  {
+    "_id": "69c52705ef4f061a329447e9",
+    "name": "undefined undefined",
+    "email": "adm2026-0001@school.com",
+    "password": "$2b$10$DqD5Vq3xMQHIb46AT7j0weIm1lB5.DV35i.pliZ5pFk8LQ2csr6.K",
+    "role": "student",
+    "__v": 0
+  },
+  {
+    "_id": "69c6e51f2aca2dc5d27387ac",
+    "name": "Priya Sharma",
+    "email": "priya.sharma@school.com",
+    "password": "$2b$10$GyvFB5hR.29icPHVXjK3OeIL2AKZBjpAML78OdqmZuleMG3ZDe5F2",
+    "role": "teacher",
+    "__v": 0,
+    "salary_config": {
+      "base_salary": 15000,
+      "housing_allowance": 1300,
+      "other_allowances": 1200,
+      "pf_deduction": 2000,
+      "tax_deduction": 1800
+    }
+  },
+  {
+    "_id": "69c8363cbab37cea269d0044",
+    "name": "krushna Patil",
+    "email": "adm2026-0004@school.com",
+    "password": "$2b$10$eAc7HXRMtp8jjo0uphMkv.6o/.IJ/USwrkaJf5TGvkHafDnedTRGC",
+    "role": "student",
+    "salary_config": {
+      "base_salary": 0,
+      "housing_allowance": 0,
+      "other_allowances": 0,
+      "pf_deduction": 0,
+      "tax_deduction": 0
+    },
+    "__v": 0
+  },
+  {
+    "_id": "69c8bd3ff337c60d7a8dba8e",
+    "name": "Aniket Patil",
+    "email": "adm2026-0005@school.com",
+    "password": "$2b$10$LGbDSaMWNPJrHqFd.Zhj9up.TtdVYkNZF3MuxlqmccyAe6FBMRXo2",
+    "role": "student",
+    "salary_config": {
+      "base_salary": 0,
+      "housing_allowance": 0,
+      "other_allowances": 0,
+      "pf_deduction": 0,
+      "tax_deduction": 0
+    },
+    "__v": 0
+  },
+  {
+    "_id": "69ca1d9092c75d031cf863ca",
+    "name": "Admin 2",
+    "email": "admin2@gmail.com",
+    "password": "$2b$10$0oRuWdKkSDTGuJJ7m3ybK.D1RLscFblOKvDyQKdp7dme6GeItL7lu",
+    "role": "admin",
+    "__v": 0
+  }
+]

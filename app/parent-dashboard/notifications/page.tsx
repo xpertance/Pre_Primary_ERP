@@ -1,6 +1,11 @@
 "use client";
-import NotificationCenter from "@/components/admin/NotificationCenter";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function NotificationsPage() {
-  return <NotificationCenter />;
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/parent-dashboard/announcements");
+  }, [router]);
+  return null;
 }

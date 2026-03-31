@@ -3,41 +3,17 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 export async function middleware(req: NextRequest) {
-  // Debug: log cookie header and pathname to help diagnose missing token
   const token = req.cookies.get("token")?.value;
-  // console.log("[middleware] path=", req.nextUrl.pathname, "cookieHeader=", cookieHeader, "token=", token);
 
+  // Only truly public (unauthenticated) routes
   const publicRoutes = [
-    "/auth/login", // Keep for legacy if any links exist, but actual page is /login
-    "/auth/register",
-    "/teacher-dashboard",
-    "/student-dashboard",
-    "/auth/forgot-password",
     "/login",
     "/register",
     "/forgot-password",
-    "/dashboard", // Dashboard itself is protected?? Wait, usually dashboard is protected.
-    // The previous code had dashboard in publicRoutes???
-    // Lines 20-41 of original file show excessive public routes including /dashboard/fees
-    // This seems WRONG if we want protection.
-    // However, I should stick to fixing the error first.
-    // The user said "token verify failed". This means the route was NOT public, so it tried to verify.
-    // If I make it public, it bypasses verification.
-    // The list in previous file had "/dashboard/fees".
-    // But the user was accessing "/dashboard/fees/ID".
-    // "dashboard/fees" matches "/dashboard/fees".
-    // "/dashboard/fees/:path*" matches subpaths.
-    // The publicRoutes check uses `includes`. exact match.
-    // So "/dashboard/fees/123" is NOT in publicRoutes.
-    // So logic falls through to verification.
-    // And verification failed.
+    "/auth/login",
+    "/auth/register",
+    "/auth/forgot-password",
   ];
-
-  //   if (publicRoutes.includes(req.nextUrl.pathname)) {
-  //     return NextResponse.next();
-  //   }
-  // The logic above is flawed for dynamic routes if using exact match.
-  // But let's fix the critical crash first.
 
   const isPublicRoute = publicRoutes.includes(req.nextUrl.pathname);
 
@@ -52,7 +28,27 @@ export async function middleware(req: NextRequest) {
 
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-    await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret);
+    const role = payload.role as string;
+
+    // Role-based path enforcement: redirect to the correct dashboard if role doesn't match
+    const pathname = req.nextUrl.pathname;
+    const roleDashboardMap: Record<string, string> = {
+      admin: "/dashboard",
+      teacher: "/teacher-dashboard",
+      parent: "/parent-dashboard",
+      student: "/student-dashboard",
+    };
+    const correctBase = roleDashboardMap[role];
+
+    if (correctBase) {
+      const wrongBases = Object.values(roleDashboardMap).filter((b) => b !== correctBase);
+      const isOnWrongDashboard = wrongBases.some((base) => pathname === base || pathname.startsWith(base + "/"));
+      if (isOnWrongDashboard) {
+        return NextResponse.redirect(new URL(correctBase, req.url));
+      }
+    }
+
     return NextResponse.next();
   } catch (err) {
     console.log("[middleware] token verify failed", err);
@@ -62,9 +58,13 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/dashboard",
     "/dashboard/:path*",
+    "/teacher-dashboard",
     "/teacher-dashboard/:path*",
+    "/student-dashboard",
     "/student-dashboard/:path*",
+    "/parent-dashboard",
     "/parent-dashboard/:path*",
     "/students/:path*",
     "/teachers/:path*",
