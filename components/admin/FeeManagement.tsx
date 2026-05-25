@@ -13,7 +13,7 @@ import Breadcrumbs from "@/components/common/Breadcrumbs";
 import { showToast } from "@/lib/toast";
 import { exportToCSV } from "@/utils/exportData";
 import {
-  DollarSign,
+  IndianRupee,
   Plus,
   Edit2,
   Trash2,
@@ -225,7 +225,6 @@ export default function FeeStructureManagement() {
   );
 
   const totalStructures = feeStructures.length;
-  const activeStructures = feeStructures.filter((s) => s.active).length;
   const totalFeeHeads = feeStructures.reduce((sum, s) => sum + s.heads.length, 0);
 
   const getFrequencyBadge = (frequency: string) => {
@@ -284,15 +283,7 @@ export default function FeeStructureManagement() {
       label: "Late Fine",
       render: (value: unknown) => `₹${Number(value)}/day`,
     },
-    {
-      key: "active",
-      label: "Status",
-      render: (value: unknown) => (
-        <Badge variant={value ? "success" : "danger"} size="sm">
-          {value ? "Active" : "Inactive"}
-        </Badge>
-      ),
-    },
+
   ];
 
   return (
@@ -316,7 +307,7 @@ export default function FeeStructureManagement() {
       </div>
 
       {/* Tabs */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -329,18 +320,6 @@ export default function FeeStructureManagement() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-700 text-sm font-medium mb-2">Active Structures</p>
-              <p className="text-4xl font-bold text-green-600">{activeStructures}</p>
-            </div>
-            <div className="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center">
-              <CheckCircle2 className="w-7 h-7 text-white" />
-            </div>
-          </div>
-        </div>
-
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
           <div className="flex items-center justify-between">
             <div>
@@ -348,7 +327,7 @@ export default function FeeStructureManagement() {
               <p className="text-4xl font-bold text-blue-600">{totalFeeHeads}</p>
             </div>
             <div className="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-7 h-7 text-white" />
+              <IndianRupee className="w-7 h-7 text-white" />
             </div>
           </div>
         </div>
@@ -574,7 +553,7 @@ export default function FeeStructureManagement() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Late Fine (per day)</label>
               <div className="relative">
@@ -588,19 +567,6 @@ export default function FeeStructureManagement() {
                   className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all"
                 />
               </div>
-            </div>
-
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="active"
-                  checked={formData.active}
-                  onChange={handleInputChange}
-                  className="w-4 h-4 text-emerald-600 rounded focus:ring-2 focus:ring-emerald-400"
-                />
-                <span className="text-sm font-medium text-gray-700">Active Structure</span>
-              </label>
             </div>
           </div>
         </div>

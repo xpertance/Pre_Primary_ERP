@@ -30,7 +30,7 @@ export async function GET(req: Request) {
 
     const skip = (page - 1) * limit;
 
-    const [exams, total] = await Promise.all([
+    const [examsRaw, total] = await Promise.all([
       Exam.find(filter)
         .populate("classId", "name section")
         .sort({ startDate: -1 })
@@ -39,6 +39,32 @@ export async function GET(req: Request) {
         .lean(),
       Exam.countDocuments(filter),
     ]);
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const exams = examsRaw.map((exam: any) => {
+      let computedStatus = exam.status;
+      const start = new Date(exam.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(exam.endDate || exam.startDate);
+      end.setHours(23, 59, 59, 999);
+
+      if (now > end) {
+        computedStatus = "completed";
+      } else if (now >= start && now <= end) {
+        computedStatus = "ongoing";
+      } else {
+        computedStatus = "scheduled";
+      }
+
+      // Fire and forget update if status changed
+      if (computedStatus !== exam.status) {
+        Exam.updateOne({ _id: exam._id }, { status: computedStatus }).exec().catch(console.error);
+      }
+
+      return { ...exam, status: computedStatus };
+    });
 
     return NextResponse.json({
       success: true,

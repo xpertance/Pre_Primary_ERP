@@ -20,7 +20,7 @@ import {
   Trash2,
   Download,
   Upload,
-  DollarSign,
+  IndianRupee,
   Users,
   CheckCircle2,
   AlertCircle,
@@ -816,7 +816,7 @@ export default function MealPlanManagement() {
           {/* Vendor & Cost */}
           <div className="border-t pt-5">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <DollarSign className="w-4 h-4" />
+              <IndianRupee className="w-4 h-4" />
               Vendor & Cost
             </h3>
             <div className="space-y-4">

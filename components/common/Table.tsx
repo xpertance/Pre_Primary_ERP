@@ -14,6 +14,7 @@ interface TableProps {
   data: Record<string, unknown>[];
   loading?: boolean;
   onRowClick?: (row: Record<string, unknown>) => void;
+  onRowDoubleClick?: (row: Record<string, unknown>) => void;
   actions?: (row: Record<string, unknown>) => ReactNode;
   striped?: boolean;
   hoverable?: boolean;
@@ -26,6 +27,7 @@ export default function Table({
   data,
   loading = false,
   onRowClick,
+  onRowDoubleClick,
   actions,
   striped = true,
   hoverable = true,
@@ -83,6 +85,7 @@ export default function Table({
                 className={`border-b border-gray-200 transition-colors ${striped && idx % 2 === 0 ? "bg-gray-50" : "bg-white"
                   } ${hoverable ? "hover:bg-blue-50 cursor-pointer" : ""}`}
                 onClick={() => onRowClick?.(row)}
+                onDoubleClick={() => onRowDoubleClick?.(row)}
               >
                 {columns.map((col) => (
                   <td

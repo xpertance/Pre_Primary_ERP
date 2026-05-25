@@ -17,7 +17,13 @@ export async function GET(req: Request) {
   if (!["admin", "teacher"].includes(user.role))
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
 
-  const timetable = await Timetable.find()
+  const { searchParams } = new URL(req.url);
+  const teacherId = searchParams.get("teacherId");
+  
+  const query: any = {};
+  if (teacherId) query.teacherId = teacherId;
+
+  const timetable = await Timetable.find(query)
     .populate("classId")
     .populate("teacherId")
     .lean();
@@ -42,6 +48,28 @@ export async function POST(req: Request) {
     const teacher = await import("@/models/Teacher").then((mod) => mod.default.findById(parsed.teacherId));
     if (!teacher) {
       return NextResponse.json({ success: false, error: "Teacher not found" }, { status: 404 });
+    }
+
+    // Check for overlap
+    const overlap = await Timetable.findOne({
+      teacherId: parsed.teacherId,
+      day: parsed.day,
+      startTime: { $lt: parsed.endTime },
+      endTime: { $gt: parsed.startTime }
+    });
+
+    if (overlap) {
+      if (user.role === "admin") {
+        await import("@/models/Notification").then((mod) => mod.default.create({
+          recipientId: user.id, 
+          type: "system",
+          title: "Schedule Conflict Prevented",
+          message: `Attempted to double-book ${teacher.name} on ${parsed.day} at ${parsed.startTime}-${parsed.endTime}, but they are already booked for ${overlap.subject}.`,
+          priority: "high",
+          icon: "Calendar"
+        }));
+      }
+      return NextResponse.json({ success: false, error: "Teacher is already scheduled for another class during this time." }, { status: 400 });
     }
 
     const created = await Timetable.create(parsed);

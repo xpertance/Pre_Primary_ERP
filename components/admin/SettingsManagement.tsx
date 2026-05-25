@@ -19,7 +19,10 @@ import {
   CheckCircle2,
   Zap,
   Shield,
-  Bell
+  Bell,
+  BookOpen,
+  Trash2,
+  Plus
 } from "lucide-react";
 
 interface SchoolSettings {
@@ -31,6 +34,7 @@ interface SchoolSettings {
   schoolEmail: string;
   principalName: string;
   academicYear: string;
+  subjects?: string[];
   featureFlags?: {
     enableTransport: boolean;
     enableMealPlan: boolean;
@@ -93,6 +97,7 @@ export default function SettingsManagement() {
     schoolEmail: "",
     principalName: "",
     academicYear: "",
+    subjects: ["Maths", "English", "Science"], // Default starter subjects
     featureFlags: {
       enableTransport: true,
       enableMealPlan: true,
@@ -157,6 +162,27 @@ export default function SettingsManagement() {
         ...prev.featureFlags!,
         [key]: !prev.featureFlags![key as keyof typeof prev.featureFlags]
       }
+    }));
+  };
+
+  const handleAddSubject = () => {
+    setFormData(prev => ({
+      ...prev,
+      subjects: [...(prev.subjects || []), ""]
+    }));
+  };
+
+  const handleSubjectChange = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      subjects: (prev.subjects || []).map((s, i) => i === index ? value : s)
+    }));
+  };
+
+  const handleRemoveSubject = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      subjects: (prev.subjects || []).filter((_, i) => i !== index)
     }));
   };
 
@@ -388,6 +414,47 @@ export default function SettingsManagement() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Subjects Management */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-500 rounded-lg flex items-center justify-center">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">Global Subjects</h2>
+                <p className="text-sm text-gray-600">Define the global list of subjects available for assignment to teachers and classes</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 max-w-2xl">
+              {(formData.subjects || []).map((subject, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={(e) => handleSubjectChange(idx, e.target.value)}
+                    placeholder="Enter subject name (e.g. Mathematics)"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
+                  />
+                  <button
+                    onClick={() => handleRemoveSubject(idx)}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all"
+                    title="Remove Subject"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                onClick={handleAddSubject}
+                className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-indigo-400 hover:text-indigo-600 transition-all w-full justify-center mt-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add New Subject
+              </button>
             </div>
           </div>
 

@@ -100,6 +100,7 @@ export default function TransportManagement() {
   const [editingRoute, setEditingRoute] = useState<TransportRoute | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingRoute, setDeletingRoute] = useState<TransportRoute | null>(null);
+  const [studentSearch, setStudentSearch] = useState("");
 
   const [formData, setFormData] = useState<{
     routeName: string;
@@ -220,12 +221,22 @@ export default function TransportManagement() {
   };
 
   const handleStudentToggle = (studentId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      students: prev.students.includes(studentId)
-        ? prev.students.filter((id) => id !== studentId)
-        : [...prev.students, studentId],
-    }));
+    setFormData((prev) => {
+      const isSelected = prev.students.includes(studentId);
+      
+      // Enforce capacity check when adding a new student
+      if (!isSelected && prev.capacity > 0 && prev.students.length >= prev.capacity) {
+        showToast.error(`Route capacity (${prev.capacity}) reached. Cannot assign more students.`);
+        return prev;
+      }
+
+      return {
+        ...prev,
+        students: isSelected
+          ? prev.students.filter((id) => id !== studentId)
+          : [...prev.students, studentId],
+      };
+    });
   };
 
   const handleSaveRoute = async () => {
@@ -255,6 +266,7 @@ export default function TransportManagement() {
       showToast.success(`Route ${editingRoute ? "updated" : "created"} successfully`);
       setModalOpen(false);
       setEditingRoute(null);
+      setStudentSearch(""); // Reset search on close
       resetForm();
       fetchRoutes();
     } catch (error) {
@@ -297,6 +309,7 @@ export default function TransportManagement() {
       status: route.status,
       isActive: route.isActive,
     });
+    setStudentSearch(""); // Reset search on open
     setModalOpen(true);
   };
 
@@ -327,6 +340,15 @@ export default function TransportManagement() {
       route.routeCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       route.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredStudentsForModal = students.filter(student => {
+    const query = studentSearch.toLowerCase();
+    return (
+      student.firstName.toLowerCase().includes(query) ||
+      (student.lastName || "").toLowerCase().includes(query) ||
+      (student.admissionNo || "").toLowerCase().includes(query)
+    );
+  });
 
   const totalRoutes = routes.length;
   const activeRoutes = routes.filter((r) => r.status === "active").length;
@@ -587,6 +609,7 @@ export default function TransportManagement() {
         onClose={() => {
           setModalOpen(false);
           setEditingRoute(null);
+          setStudentSearch("");
         }}
         title={editingRoute ? "Edit Route" : "Create Route"}
         size="lg"
@@ -596,6 +619,7 @@ export default function TransportManagement() {
               onClick={() => {
                 setModalOpen(false);
                 setEditingRoute(null);
+                setStudentSearch("");
               }}
               variant="secondary"
             >
@@ -828,39 +852,74 @@ export default function TransportManagement() {
                 <Users className="w-4 h-4" />
                 Assigned Students
               </div>
-              <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                {formData.students.length} selected
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                  formData.capacity > 0 && formData.students.length >= formData.capacity 
+                    ? "bg-red-100 text-red-700" 
+                    : "bg-blue-100 text-blue-700"
+                }`}>
+                  {formData.students.length} {formData.capacity > 0 ? `/ ${formData.capacity}` : ''} selected
+                </span>
+              </div>
             </h3>
+            
+            {/* Student Search Bar */}
+            <div className="mb-3 px-1">
+              <div className="relative w-full">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search students by name or ID..."
+                  value={studentSearch}
+                  onChange={(e) => setStudentSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                />
+              </div>
+            </div>
+
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <div className="max-h-56 overflow-y-auto custom-scrollbar divide-y divide-gray-100">
-                {students.length > 0 ? (
-                  students.map((student) => (
-                    <label
-                      key={student._id}
-                      className={`flex items-center gap-3 p-3 hover:bg-blue-50 cursor-pointer transition-colors ${formData.students.includes(student._id) ? "bg-blue-50/50" : ""}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.students.includes(student._id)}
-                        onChange={() => handleStudentToggle(student._id)}
-                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-400 border-gray-300"
-                      />
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-gray-800">
-                          {student.firstName} {student.lastName}
-                        </div>
-                        {student.admissionNo && (
-                          <div className="text-[10px] font-bold text-gray-400 uppercase">
-                            ID: {student.admissionNo}
+                {filteredStudentsForModal.length > 0 ? (
+                  filteredStudentsForModal.map((student) => {
+                    const isSelected = formData.students.includes(student._id);
+                    const isAtCapacity = formData.capacity > 0 && formData.students.length >= formData.capacity;
+                    const isDisabled = !isSelected && isAtCapacity;
+
+                    return (
+                      <label
+                        key={student._id}
+                        className={`flex items-center gap-3 p-3 transition-colors ${
+                          isSelected ? "bg-blue-50/50" : ""
+                        } ${
+                          isDisabled ? "opacity-50 cursor-not-allowed bg-gray-50" : "hover:bg-blue-50 cursor-pointer"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleStudentToggle(student._id)}
+                          disabled={isDisabled}
+                          className={`w-4 h-4 rounded border-gray-300 ${
+                            isDisabled ? "cursor-not-allowed bg-gray-200" : "text-blue-600 focus:ring-blue-400"
+                          }`}
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-gray-800 flex justify-between items-center">
+                            <span>{student.firstName} {student.lastName}</span>
+                            {isSelected && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
                           </div>
-                        )}
-                      </div>
-                    </label>
-                  ))
+                          {student.admissionNo && (
+                            <div className="text-[10px] font-bold text-gray-400 uppercase">
+                              ID: {student.admissionNo}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })
                 ) : (
                   <div className="p-8 text-center text-gray-400 text-sm italic">
-                    No students found.
+                    {studentSearch ? "No students match your search." : "No students found."}
                   </div>
                 )}
               </div>

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import StudentFeeManagement from "@/components/admin/StudentFeeManagement";
 import FeeManagement from "@/components/admin/FeeManagement"; // Fee Structure Management
 
-import { DollarSign, Layers, Receipt } from "lucide-react";
+import { IndianRupee, Layers, Receipt } from "lucide-react";
 
 export default function DashboardFeesPage() {
   const [activeTab, setActiveTab] = useState<"collections" | "structures">("collections");
@@ -20,7 +20,7 @@ export default function DashboardFeesPage() {
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
           >
-            <DollarSign className="w-4 h-4" />
+            <IndianRupee className="w-4 h-4" />
             Fee Collections
           </button>
 

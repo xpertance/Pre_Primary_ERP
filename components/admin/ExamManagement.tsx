@@ -292,9 +292,11 @@ export default function ExamManagement() {
       const data = await res.json();
       if (data.success) {
         showToast.success("Exam deleted successfully");
+        setExams(prev => prev.filter(e => e._id !== deletingExam._id));
         setShowDeleteModal(false);
         setDeletingExam(null);
-        fetchExams();
+      } else {
+        showToast.error(data.error || "Failed to delete exam");
       }
     } catch (error) {
       showToast.error("Failed to delete exam");
@@ -834,16 +836,10 @@ export default function ExamManagement() {
             <div className="grid grid-cols-2 gap-4 items-end">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all appearance-none bg-white text-sm"
-                >
-                  <option value="scheduled">Scheduled</option>
-                  <option value="ongoing">Ongoing</option>
-                  <option value="completed">Completed</option>
-                </select>
+                <div className="w-full px-3 py-2.5 border border-gray-200 bg-gray-50 rounded-lg text-gray-500 text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  Auto-computed from dates
+                </div>
               </div>
 
               <div className="flex items-center gap-3 pb-1">

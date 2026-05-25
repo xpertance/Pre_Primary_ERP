@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import {
     User, Phone, Mail, Calendar, MapPin,
-    DollarSign, AlertCircle, ArrowLeft,
+    IndianRupee, AlertCircle, ArrowLeft,
     Download, Plus, CreditCard, Edit2, Trash2, UserCheck
 } from "lucide-react";
 import Button from "@/components/common/Button";
@@ -95,6 +95,9 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showTransactionModal, setShowTransactionModal] = useState(false);
     const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+    const [selectedTransaction, setSelectedTransaction] = useState<FeeTransaction | null>(null);
+    const [showConfirmScreen, setShowConfirmScreen] = useState(false);
+    const [paymentSuccessDetails, setPaymentSuccessDetails] = useState<{ amount: number, transactionId: string } | null>(null);
 
     const [paymentData, setPaymentData] = useState<PaymentFormData>({
         amountPaid: 0,
@@ -173,14 +176,17 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
         return variants[status] || "info";
     };
 
-    const handleOpenPaymentModal = (transactionId: string, amountDue: number, amountPaid: number) => {
-        setSelectedTransactionId(transactionId);
+    const handleOpenPaymentModal = (transaction: FeeTransaction) => {
+        setSelectedTransactionId(transaction._id);
+        setSelectedTransaction(transaction);
+        const balance = transaction.amountDue - transaction.amountPaid;
         setPaymentData({
             ...paymentData,
-            amountPaid: amountDue - amountPaid,
+            amountPaid: Math.max(balance, 0),
             fineAdjustment: 0,
             note: "",
         });
+        setPaymentSuccessDetails(null);
         setShowPaymentModal(true);
     };
 
@@ -196,8 +202,10 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
 
             const data = await res.json();
             if (data.success) {
-                showToast.success("Payment recorded successfully");
-                setShowPaymentModal(false);
+                setPaymentSuccessDetails({
+                    amount: paymentData.amountPaid,
+                    transactionId: data.transaction?._id || selectedTransactionId || "N/A"
+                });
                 fetchStudentDetails(); // Refresh Page Data
             } else {
                 showToast.error(data.error || "Failed to record payment");
@@ -596,7 +604,7 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
             {/* ── Fee Stats Row ── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl p-5 text-white shadow-md">
-                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wide mb-1">Total Fees Due</p>
+                    <p className="text-blue-100 text-xs font-medium uppercase tracking-wide mb-1">Total Fee</p>
                     <h3 className="text-3xl font-bold">{formatCurrency(studentData.totalDue)}</h3>
                     <p className="text-blue-200 text-xs mt-2">Across all transactions</p>
                 </div>
@@ -607,10 +615,14 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
                         {studentData.totalDue > 0 ? Math.round((studentData.totalPaid / studentData.totalDue) * 100) : 0}% of total
                     </p>
                 </div>
-                <div className="bg-gradient-to-br from-rose-500 to-red-600 rounded-2xl p-5 text-white shadow-md">
+                <div className={`rounded-2xl p-5 text-white shadow-md ${studentData.totalPending <= 0 ? 'bg-gradient-to-br from-emerald-400 to-green-500' : 'bg-gradient-to-br from-rose-500 to-red-600'}`}>
                     <p className="text-rose-100 text-xs font-medium uppercase tracking-wide mb-1">Total Pending</p>
-                    <h3 className="text-3xl font-bold">{formatCurrency(studentData.totalPending)}</h3>
-                    <p className="text-rose-200 text-xs mt-2">Remaining balance</p>
+                    <h3 className="text-3xl font-bold">
+                        {studentData.totalPending <= 0 ? '₹0' : formatCurrency(studentData.totalPending)}
+                    </h3>
+                    <p className="text-rose-200 text-xs mt-2">
+                        {studentData.totalPending < 0 ? 'All fees cleared' : 'Remaining balance'}
+                    </p>
                 </div>
             </div>
 
@@ -748,7 +760,7 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
                                             <div className="flex items-center justify-center gap-2">
                                                 {t.status !== 'paid' && (
                                                     <button
-                                                        onClick={() => handleOpenPaymentModal(t._id, t.amountDue, t.amountPaid)}
+                                                        onClick={() => handleOpenPaymentModal(t)}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         title="Record Payment"
                                                     >
@@ -790,84 +802,142 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
                 </div>
             </div>
 
-            {/* Payment Modal */}
+            {/* Payment Modal — compact single screen */}
             <Modal
                 isOpen={showPaymentModal}
-                onClose={() => setShowPaymentModal(false)}
-                title="Record Fee Payment"
+                onClose={() => { setShowPaymentModal(false); setPaymentSuccessDetails(null); }}
+                title={paymentSuccessDetails ? "Payment Success" : "Record Fee Payment"}
+                size="lg"
             >
-                <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Amount Paid
-                        </label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+                {paymentSuccessDetails ? (
+                    <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                        <div className="w-20 h-20 bg-[#4CAF50] rounded-full flex items-center justify-center text-white mb-4 shadow-md">
+                            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Payment Complete</h2>
+                        <p className="text-gray-600 text-[15px] font-medium text-center">
+                            Your payment of <span className="text-gray-900 font-semibold">{formatCurrency(paymentSuccessDetails.amount)}</span> was approved.
+                        </p>
+                        <p className="text-xs text-gray-400 pb-4">Transaction ID: {paymentSuccessDetails.transactionId}</p>
+                        <button
+                            onClick={() => { setShowPaymentModal(false); setPaymentSuccessDetails(null); }}
+                            className="px-8 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-full font-medium transition-colors"
+                        >
+                            Back to Home
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+
+                        {/* Fee Summary */}
+                    {selectedTransaction && (
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                            <p className="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-3">Fee Summary</p>
+                            <div className="space-y-1.5 mb-3">
+                                {selectedTransaction.items.map((item, i) => (
+                                    <div key={i} className="flex justify-between items-center text-sm">
+                                        <span className="text-gray-600 font-medium">{item.head}</span>
+                                        <span className="font-semibold text-gray-800">{formatCurrency(item.amount)}</span>
+                                    </div>
+                                ))}
+                                {selectedTransaction.fineAmount > 0 && (
+                                    <div className="flex justify-between items-center text-sm">
+                                        <span className="text-orange-600 font-medium">Late Fine</span>
+                                        <span className="font-semibold text-orange-600">{formatCurrency(selectedTransaction.fineAmount)}</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="border-t border-blue-200 pt-3 grid grid-cols-3 gap-2 text-center">
+                                <div>
+                                    <p className="text-xs text-gray-400">Total Fee</p>
+                                    <p className="font-bold text-gray-800 text-sm">{formatCurrency(selectedTransaction.amountDue)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-400">Paid</p>
+                                    <p className="font-bold text-green-600 text-sm">{formatCurrency(selectedTransaction.amountPaid)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-400">Balance</p>
+                                    <p className="font-bold text-red-600 text-sm">{formatCurrency(Math.max(selectedTransaction.amountDue - selectedTransaction.amountPaid, 0))}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Amount + Method in one row */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Amount to Pay <span className="text-red-500">*</span></label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">₹</span>
+                                <input
+                                    type="number"
+                                    value={paymentData.amountPaid}
+                                    onChange={(e) => setPaymentData({ ...paymentData, amountPaid: Number(e.target.value) })}
+                                    className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-base font-semibold"
+                                    min={1}
+                                    max={selectedTransaction ? selectedTransaction.amountDue - selectedTransaction.amountPaid : undefined}
+                                />
+                            </div>
+                            {selectedTransaction && paymentData.amountPaid > 0 && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Balance after: <span className="font-semibold text-blue-600">
+                                        {formatCurrency(Math.max((selectedTransaction.amountDue - selectedTransaction.amountPaid) - paymentData.amountPaid, 0))}
+                                    </span>
+                                </p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+                            <select
+                                value={paymentData.paymentMethod}
+                                onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-sm"
+                            >
+                                <option value="cash">💵 Cash</option>
+                                <option value="online">🌐 Online Transfer</option>
+                                <option value="cheque">📝 Cheque</option>
+                                <option value="card">💳 Card</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Date + Notes in one row */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
                             <input
-                                type="number"
-                                value={paymentData.amountPaid}
-                                onChange={(e) => setPaymentData({ ...paymentData, amountPaid: Number(e.target.value) })}
-                                className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                type="date"
+                                value={paymentData.paymentDate}
+                                onChange={(e) => setPaymentData({ ...paymentData, paymentDate: e.target.value })}
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                            <input
+                                type="text"
+                                value={paymentData.note}
+                                onChange={(e) => setPaymentData({ ...paymentData, note: e.target.value })}
+                                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                                placeholder="e.g. Cheque no. 1234"
                             />
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Payment Method
-                        </label>
-                        <select
-                            value={paymentData.paymentMethod}
-                            onChange={(e) => setPaymentData({ ...paymentData, paymentMethod: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-                        >
-                            <option value="cash">Cash</option>
-                            <option value="online">Online Transfer</option>
-                            <option value="cheque">Cheque</option>
-                            <option value="card">Card</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Payment Date
-                        </label>
-                        <input
-                            type="date"
-                            value={paymentData.paymentDate}
-                            onChange={(e) => setPaymentData({ ...paymentData, paymentDate: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Notes
-                        </label>
-                        <textarea
-                            value={paymentData.note}
-                            onChange={(e) => setPaymentData({ ...paymentData, note: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                            rows={3}
-                            placeholder="Optional notes..."
-                        />
-                    </div>
-
-                    <div className="flex justify-end gap-3 mt-6">
-                        <Button
-                            variant="secondary"
-                            onClick={() => setShowPaymentModal(false)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button onClick={handleRecordPayment}>
-                            Record Payment
-                        </Button>
+                    <div className="flex justify-end gap-3 pt-1">
+                        <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>Cancel</Button>
+                        <Button onClick={handleRecordPayment}>✓ Confirm Payment</Button>
                     </div>
                 </div>
+                )}
             </Modal>
 
+
             {/* Create Transaction Modal */}
+
             <Modal
                 isOpen={showTransactionModal}
                 onClose={() => setShowTransactionModal(false)}

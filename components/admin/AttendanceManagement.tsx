@@ -69,13 +69,21 @@ export default function AttendanceManagement() {
   const [viewMode, setViewMode] = useState<"mark" | "history">("mark");
   const [classes, setClasses] = useState<Class[]>([]);
   const [selectedClass, setSelectedClass] = useState("");
-  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split("T")[0]);
+  const getLocalDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+  const [attendanceDate, setAttendanceDate] = useState(getLocalDateString());
 
   // Mark Mode Data
   const [classStudents, setClassStudents] = useState<Student[]>([]);
-  const [studentStatus, setStudentStatus] = useState<Record<string, "present" | "absent" | "late" | "excused">>({});
+  const [studentStatus, setStudentStatus] = useState<Record<string, "present" | "absent">>({});
   const [studentNotes, setStudentNotes] = useState<Record<string, string>>({});
   const [loadingRegister, setLoadingRegister] = useState(false);
+  const [registerSearch, setRegisterSearch] = useState("");
 
   // History Mode Data
   const [attendances, setAttendances] = useState<Attendance[]>([]);
@@ -130,24 +138,19 @@ export default function AttendanceManagement() {
     try {
       setLoadingStats(true);
       // Fetch stats for the selected date only
-      const res = await fetch(`/api/attendance?startDate=${attendanceDate}&endDate=${attendanceDate}`);
+      const res = await fetch(`/api/attendance?startDate=${attendanceDate}&endDate=${attendanceDate}&limit=1000&_t=${Date.now()}`);
       const data = await res.json();
       const all: Attendance[] = data.data || [];
 
       const p = all.filter(a => a.status === "present").length;
       const a = all.filter(a => a.status === "absent").length;
-      const l = all.filter(a => a.status === "late").length;
-      const e = all.filter(a => a.status === "excused").length;
       const total = all.length; // This is total marked, not total students.
-
-      // If we want total students, we'd need to know total students count.
-      // But for now, let's show stats based on what's marked for this day.
 
       setStats({
         present: p,
         absent: a,
-        late: l,
-        excused: e,
+        late: 0,
+        excused: 0,
         rate: total > 0 ? Math.round((p / total) * 100) : 0
       });
     } catch {
@@ -178,12 +181,12 @@ export default function AttendanceManagement() {
       setClassStudents(filtered);
 
       // 2. Fetch Attendance for this class & date
-      const resAtt = await fetch(`/api/attendance?classId=${selectedClass}&startDate=${attendanceDate}&endDate=${attendanceDate}&limit=500`);
+      const resAtt = await fetch(`/api/attendance?classId=${selectedClass}&startDate=${attendanceDate}&endDate=${attendanceDate}&limit=500&_t=${Date.now()}`);
       const dataAtt = await resAtt.json();
       const existingRecords: Attendance[] = dataAtt.data || [];
 
       // 3. Merge Status
-      const statusMap: Record<string, "present" | "absent" | "late" | "excused"> = {};
+      const statusMap: Record<string, "present" | "absent"> = {};
       const notesMap: Record<string, string> = {};
 
       filtered.forEach(student => {
@@ -192,8 +195,8 @@ export default function AttendanceManagement() {
           return rId === student._id;
         });
 
-        if (record) {
-          statusMap[student._id] = record.status;
+        if (record && (record.status === "present" || record.status === "absent")) {
+          statusMap[student._id] = record.status as "present" | "absent";
           if (record.notes) notesMap[student._id] = record.notes;
         } else {
           // Default to present for new marking
@@ -221,7 +224,7 @@ export default function AttendanceManagement() {
         url += `&startDate=${attendanceDate}&endDate=${attendanceDate}`;
       }
 
-      const res = await fetch(url);
+      const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}limit=100&_t=${Date.now()}`);
       const data = await res.json();
       setAttendances(data.data || []);
     } catch {
@@ -231,12 +234,12 @@ export default function AttendanceManagement() {
     }
   };
 
-  const toggleStatus = (studentId: string, status: "present" | "absent" | "late" | "excused") => {
+  const toggleStatus = (studentId: string, status: "present" | "absent") => {
     setStudentStatus(prev => ({ ...prev, [studentId]: status }));
   };
 
   const markAll = (status: "present" | "absent") => {
-    const newStatus: Record<string, "present" | "absent" | "late" | "excused"> = {};
+    const newStatus: Record<string, "present" | "absent"> = {};
     classStudents.forEach(s => {
       newStatus[s._id] = status;
     });
@@ -280,10 +283,15 @@ export default function AttendanceManagement() {
   const currentRegisterStats = {
     present: Object.values(studentStatus).filter(s => s === "present").length,
     absent: Object.values(studentStatus).filter(s => s === "absent").length,
-    late: Object.values(studentStatus).filter(s => s === "late").length,
-    excused: Object.values(studentStatus).filter(s => s === "excused").length,
     total: classStudents.length
   };
+
+  const filteredClassStudents = classStudents.filter(student => {
+    const name = `${student.firstName} ${student.lastName || ""}`.toLowerCase();
+    const adm = (student.admissionNo || "").toLowerCase();
+    const query = registerSearch.toLowerCase();
+    return name.includes(query) || adm.includes(query);
+  });
 
   const columns: Column[] = [
     {
@@ -349,8 +357,7 @@ export default function AttendanceManagement() {
           </div>
 
           {/* Overall Stats Cards */}
-          {/* Overall Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
             <div className="bg-emerald-50 p-5 rounded-2xl border border-emerald-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
               <div className="flex justify-between items-start mb-2">
                 <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider">Present Today</p>
@@ -369,16 +376,6 @@ export default function AttendanceManagement() {
                 </div>
               </div>
               <p className="text-3xl font-extrabold text-pink-900">{stats.absent}</p>
-            </div>
-
-            <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-amber-700 text-xs font-bold uppercase tracking-wider">Late Arrival</p>
-                <div className="w-10 h-10 bg-white/60 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                </div>
-              </div>
-              <p className="text-3xl font-extrabold text-amber-900">{stats.late}</p>
             </div>
 
             <div className="bg-blue-50 p-5 rounded-2xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
@@ -510,7 +507,7 @@ export default function AttendanceManagement() {
                             {currentRegisterStats.total} Students Total
                           </span>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-gray-100">
+                        <div className="grid grid-cols-2 divide-x divide-y sm:divide-y-0 divide-gray-100">
                           <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 bg-green-50/50">
                             <span className="text-2xl font-extrabold text-green-700">{currentRegisterStats.present}</span>
                             <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Present</span>
@@ -519,26 +516,30 @@ export default function AttendanceManagement() {
                             <span className="text-2xl font-extrabold text-red-700">{currentRegisterStats.absent}</span>
                             <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">Absent</span>
                           </div>
-                          <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 bg-amber-50/50">
-                            <span className="text-2xl font-extrabold text-amber-700">{currentRegisterStats.late}</span>
-                            <span className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Late</span>
-                          </div>
-                          <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 bg-blue-50/50">
-                            <span className="text-2xl font-extrabold text-blue-700">{currentRegisterStats.excused}</span>
-                            <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Excused</span>
-                          </div>
                         </div>
                       </div>
 
-                      {/* Student Register Grid */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {classStudents.map((student, index) => {
+                      {/* Register Search Filter */}
+                      <div className="mb-6">
+                        <div className="relative w-full md:w-96">
+                          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            placeholder="Filter students by name..."
+                            value={registerSearch}
+                            onChange={(e) => setRegisterSearch(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 font-medium text-gray-700 text-sm transition-all shadow-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Student Register List */}
+                      <div className="flex flex-col gap-3">
+                        {filteredClassStudents.map((student, index) => {
                           const status = studentStatus[student._id] || "present";
                           const statusConfig: Record<string, { bg: string; lightBg: string; border: string; text: string; label: string }> = {
-                            present: { bg: "bg-green-500", lightBg: "bg-green-50", border: "border-green-400", text: "text-green-700", label: "Present" },
-                            absent: { bg: "bg-red-500", lightBg: "bg-red-50", border: "border-red-400", text: "text-red-700", label: "Absent" },
-                            late: { bg: "bg-amber-500", lightBg: "bg-amber-50", border: "border-amber-400", text: "text-amber-700", label: "Late" },
-                            excused: { bg: "bg-blue-500", lightBg: "bg-blue-50", border: "border-blue-400", text: "text-blue-700", label: "Excused" },
+                            present: { bg: "bg-green-500", lightBg: "bg-green-50", border: "border-green-300", text: "text-green-700", label: "Present" },
+                            absent: { bg: "bg-red-500", lightBg: "bg-red-50", border: "border-red-300", text: "text-red-700", label: "Absent" },
                           };
                           const current = statusConfig[status] || statusConfig.present;
                           const avatarColors = [
@@ -550,49 +551,41 @@ export default function AttendanceManagement() {
                             "from-amber-400 to-orange-400",
                           ];
                           const avatarColor = avatarColors[index % avatarColors.length];
-                          const buttons: { key: "present" | "absent" | "late" | "excused"; icon: React.ReactNode; shortLabel: string; color: string; activeColor: string }[] = [
-                            { key: "present", icon: <CheckCircle2 className="w-4 h-4" />, shortLabel: "P", color: "text-green-600 hover:bg-green-50 hover:border-green-400", activeColor: "bg-green-500 text-white border-green-500 shadow-md" },
-                            { key: "absent", icon: <XCircle className="w-4 h-4" />, shortLabel: "A", color: "text-red-500   hover:bg-red-50   hover:border-red-400", activeColor: "bg-red-500   text-white border-red-500   shadow-md" },
-                            { key: "late", icon: <Clock className="w-4 h-4" />, shortLabel: "L", color: "text-amber-600 hover:bg-amber-50 hover:border-amber-400", activeColor: "bg-amber-500 text-white border-amber-500 shadow-md" },
-                            { key: "excused", icon: <ShieldCheck className="w-4 h-4" />, shortLabel: "E", color: "text-blue-600  hover:bg-blue-50  hover:border-blue-400", activeColor: "bg-blue-500  text-white border-blue-500  shadow-md" },
+                          const buttons: { key: "present" | "absent"; icon: React.ReactNode; label: string; color: string; activeColor: string }[] = [
+                            { key: "present", icon: <CheckCircle2 className="w-4 h-4" />, label: "Present", color: "text-green-600 hover:bg-green-50 border-transparent hover:border-green-200", activeColor: "bg-green-500 text-white border-green-500 shadow-md" },
+                            { key: "absent", icon: <XCircle className="w-4 h-4" />, label: "Absent", color: "text-red-500 hover:bg-red-50 border-transparent hover:border-red-200", activeColor: "bg-red-500 text-white border-red-500 shadow-md" },
                           ];
                           return (
-                            <div key={student._id} className={`relative bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden shadow-sm hover:shadow-lg ${current.border}`}>
-                              {/* Top accent bar */}
-                              <div className={`h-2 w-full ${current.bg}`} />
-                              <div className="p-4">
-                                {/* Student info */}
-                                <div className="flex items-center gap-3 mb-4">
-                                  <div className={`flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${avatarColor} flex items-center justify-center text-white text-xl font-extrabold shadow-sm`}>
-                                    {student.firstName.charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">
+                            <div key={student._id} className={`bg-white rounded-xl border transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md flex items-center p-3 sm:p-4 gap-4 ${current.border}`}>
+                                <div className={`flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br ${avatarColor} flex items-center justify-center text-white text-xl font-extrabold shadow-sm`}>
+                                  {student.firstName.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                  <div>
+                                    <h3 className="font-bold text-gray-900 text-[15px] leading-tight truncate flex items-center gap-2">
                                       {student.firstName} {student.lastName || ""}
+                                      <span className={`hidden sm:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full ${current.lightBg} ${current.text} border ${current.border}`}>
+                                        {current.label}
+                                      </span>
                                     </h3>
                                     <p className="text-xs text-gray-500 mt-0.5">
                                       Reg No: <span className="text-gray-700 font-semibold">{student.admissionNo || "N/A"}</span>
                                     </p>
                                   </div>
-                                  <span className={`flex-shrink-0 text-xs font-bold px-2.5 py-1 rounded-full ${current.lightBg} ${current.text} border ${current.border}`}>
-                                    {current.label}
-                                  </span>
+                                  {/* Toggle Buttons */}
+                                  <div className="flex items-center gap-2 mt-1 sm:mt-0">
+                                    {buttons.map(btn => (
+                                      <button
+                                        key={btn.key}
+                                        onClick={() => toggleStatus(student._id, btn.key)}
+                                        className={`flex items-center justify-center gap-1.5 py-2 px-4 rounded-lg border-2 text-sm font-bold transition-all duration-200 active:scale-95 min-w-[100px] ${status === btn.key ? btn.activeColor : `bg-gray-50 ${btn.color}`}`}
+                                      >
+                                        {btn.icon}
+                                        <span className="leading-none">{btn.label}</span>
+                                      </button>
+                                    ))}
+                                  </div>
                                 </div>
-                                {/* Toggle Buttons */}
-                                <div className="grid grid-cols-4 gap-2">
-                                  {buttons.map(btn => (
-                                    <button
-                                      key={btn.key}
-                                      onClick={() => toggleStatus(student._id, btn.key)}
-                                      title={btn.key.charAt(0).toUpperCase() + btn.key.slice(1)}
-                                      className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border-2 text-xs font-bold transition-all duration-200 active:scale-95 ${status === btn.key ? btn.activeColor : `bg-gray-50 border-gray-200 ${btn.color}`}`}
-                                    >
-                                      {btn.icon}
-                                      <span className="text-[10px] leading-none">{btn.shortLabel}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
                             </div>
                           );
                         })}

@@ -10,7 +10,7 @@ import {
   School,
   FileText,
   ClipboardCheck,
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Clock,
   AlertCircle,
@@ -167,7 +167,7 @@ export default function AdminDashboard() {
     },
     {
       title: "Fees",
-      icon: DollarSign,
+      icon: IndianRupee,
       count: `₹${stats.totalFees.toLocaleString()}`,
       bgColor: "bg-emerald-50",
       iconBg: "bg-emerald-500",
