@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Search, Eye, DollarSign, AlertCircle, CheckCircle2, Clock, Filter, X, User, Phone, Mail, Calendar, MapPin } from "lucide-react";
+import { Search, Eye, IndianRupee, AlertCircle, CheckCircle2, Clock, Filter, X, User, Phone, Mail, Calendar, MapPin } from "lucide-react";
 import Modal from "@/components/common/Modal";
 import Button from "@/components/common/Button";
 import Badge from "@/components/common/Badge";
@@ -396,7 +396,7 @@ export default function StudentFeeManagement() {
                             </div>
                         </div>
                         <div className="w-14 h-14 bg-purple-500 rounded-xl flex items-center justify-center">
-                            <DollarSign className="w-7 h-7 text-white" />
+                            <IndianRupee className="w-7 h-7 text-white" />
                         </div>
                     </div>
                 </div>
@@ -459,7 +459,7 @@ export default function StudentFeeManagement() {
                             <tr>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Student</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Class</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Due</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Total Fee</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Paid</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Pending</th>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
@@ -519,8 +519,11 @@ export default function StudentFeeManagement() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="font-semibold text-red-600">
-                                                    {formatCurrency(studentData.totalPending)}
+                                                <div className={`font-semibold ${studentData.totalPending < 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                    {studentData.totalPending < 0
+                                                        ? <span title="Overpaid — excess payment recorded">₹0 ✓</span>
+                                                        : formatCurrency(studentData.totalPending)
+                                                    }
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">

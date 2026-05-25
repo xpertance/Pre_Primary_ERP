@@ -60,7 +60,11 @@ export async function POST(
         }
 
         const currentPaid = transaction.amountPaid || 0;
-        const newTotalPaid = currentPaid + amountPaid;
+        const remainingBalance = (transaction.amountDue + (transaction.fineAmount || 0)) - currentPaid;
+
+        // Cap payment to the remaining balance — no overpayment allowed
+        const effectivePayment = Math.min(amountPaid, Math.max(remainingBalance, 0));
+        const newTotalPaid = currentPaid + effectivePayment;
         const totalDue = transaction.amountDue + (transaction.fineAmount || 0);
 
         // Update transaction

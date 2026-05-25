@@ -12,6 +12,7 @@ import Alert from "@/components/common/Alert";
 import { showToast } from "@/lib/toast";
 import { exportToCSV } from "@/utils/exportData";
 import Breadcrumbs from "@/components/common/Breadcrumbs";
+import { useSearchParams } from "next/navigation";
 import {
   Calendar,
   Clock,
@@ -64,18 +65,25 @@ interface Column {
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export default function TimetableManagement() {
+  const searchParams = useSearchParams();
+  const queryView = searchParams?.get("view");
+  const queryTeacherId = searchParams?.get("teacherId");
+
   const [timetables, setTimetables] = useState<Timetable[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [globalSubjects, setGlobalSubjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("calendar");
+  const [viewBy, setViewBy] = useState<"class" | "teacher">(queryView === "teacher" ? "teacher" : "class");
   const [selectedClass, setSelectedClass] = useState<string>("");
+  const [selectedTeacher, setSelectedTeacher] = useState<string>(queryTeacherId || "");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Timetable | null>(null);
 
   const [formData, setFormData] = useState({
     classId: "",
-    day: "Monday",
+    days: ["Monday"],
     subject: "",
     teacherId: "",
     startTime: "09:00",
@@ -87,7 +95,20 @@ export default function TimetableManagement() {
     fetchTimetables();
     fetchClasses();
     fetchTeachers();
+    fetchGlobalSubjects();
   }, []);
+
+  const fetchGlobalSubjects = async () => {
+    try {
+      const res = await fetch("/api/settings");
+      const data = await res.json();
+      if (data.settings && data.settings.subjects) {
+        setGlobalSubjects(data.settings.subjects);
+      }
+    } catch (e) {
+      console.error("Failed to fetch global subjects:", e);
+    }
+  };
 
   const fetchTimetables = async () => {
     try {
@@ -127,7 +148,11 @@ export default function TimetableManagement() {
     try {
       const res = await fetch("/api/teachers");
       const data = await res.json();
-      setTeachers(data.teachers || data.data || []);
+      const teachersData = data.teachers || data.data || [];
+      setTeachers(teachersData);
+      if (teachersData.length > 0 && !selectedTeacher && !queryTeacherId) {
+        setSelectedTeacher(teachersData[0]._id);
+      }
     } catch (error) {
       console.error("Failed to fetch teachers:", error);
     }
@@ -139,33 +164,58 @@ export default function TimetableManagement() {
   };
 
   const handleSaveEntry = async () => {
-    if (!formData.classId || !formData.subject || !formData.teacherId) {
-      showToast.error("Class, subject, and teacher are required");
+    if (!formData.classId || !formData.subject || !formData.teacherId || formData.days.length === 0) {
+      showToast.error("Class, subject, teacher, and at least one day are required");
       return;
     }
 
     try {
-      const method = editingEntry ? "PUT" : "POST";
-      const url = editingEntry ? `/api/timetable/${editingEntry._id}` : "/api/timetable";
+      if (editingEntry) {
+        const res = await fetch(`/api/timetable/${editingEntry._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...formData, day: formData.days[0] }),
+        });
+        const data = await res.json();
+        if (!data.success) {
+          showToast.error(data.error || "Failed to update timetable entry");
+          return;
+        }
+        showToast.success("Timetable entry updated successfully");
+      } else {
+        const entries = formData.days.map(day => ({
+          classId: formData.classId,
+          day,
+          subject: formData.subject,
+          teacherId: formData.teacherId,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          roomNumber: formData.roomNumber
+        }));
 
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await res.json();
-      if (!data.success) {
-        showToast.error(data.error || "Failed to save timetable entry");
-        return;
+        const res = await fetch("/api/timetable/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ entries })
+        });
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast.error(data.error || "Failed to save timetable entries");
+          return;
+        }
+        if (data.conflicts && data.conflicts.length > 0) {
+          showToast.error(`Saved ${data.count} entries. Skipped ${data.conflicts.length} overlaps (see notifications)`);
+        } else {
+          showToast.success("Timetable entries created successfully");
+        }
       }
 
-      showToast.success(`Timetable entry ${editingEntry ? "updated" : "created"} successfully`);
       setModalOpen(false);
       setEditingEntry(null);
       setFormData({
         classId: "",
-        day: "Monday",
+        days: ["Monday"],
         subject: "",
         teacherId: "",
         startTime: "09:00",
@@ -182,7 +232,21 @@ export default function TimetableManagement() {
     setEditingEntry(entry);
     setFormData({
       classId: typeof entry.classId === "string" ? entry.classId : (entry.classId as any)?._id || "",
-      day: entry.day,
+      days: [entry.day],
+      subject: entry.subject,
+      teacherId: typeof entry.teacherId === "string" ? entry.teacherId : (entry.teacherId as any)?._id || "",
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      roomNumber: entry.roomNumber || "",
+    });
+    setModalOpen(true);
+  };
+
+  const handleDuplicateEntry = (entry: Timetable) => {
+    setEditingEntry(null);
+    setFormData({
+      classId: typeof entry.classId === "string" ? entry.classId : (entry.classId as any)?._id || "",
+      days: [entry.day],
       subject: entry.subject,
       teacherId: typeof entry.teacherId === "string" ? entry.teacherId : (entry.teacherId as any)?._id || "",
       startTime: entry.startTime,
@@ -210,11 +274,17 @@ export default function TimetableManagement() {
     }
   };
 
-  const filteredTimetables = selectedClass
+  const filteredTimetables = viewBy === "class" && selectedClass
     ? timetables.filter((t) =>
       typeof (t.classId as any) === "string"
         ? (t.classId as any) === selectedClass
         : (t.classId as any)?._id === selectedClass
+    )
+    : viewBy === "teacher" && selectedTeacher
+    ? timetables.filter((t) =>
+      typeof (t.teacherId as any) === "string"
+        ? (t.teacherId as any) === selectedTeacher
+        : (t.teacherId as any)?._id === selectedTeacher
     )
     : timetables;
 
@@ -225,12 +295,16 @@ export default function TimetableManagement() {
     .filter(Boolean);
   const uniqueTeachers = new Set(teacherIds).size;
 
-  const getEntriesForDayAndClass = (day: string, classId: string) => {
+  const getEntriesForDayAndFilter = (day: string) => {
     return timetables
-      .filter((t) =>
-        t.day === day &&
-        (typeof (t.classId as any) === "string" ? (t.classId as any) === classId : (t.classId as any)?._id === classId)
-      )
+      .filter((t) => {
+        if (t.day !== day) return false;
+        if (viewBy === "class") {
+          return typeof (t.classId as any) === "string" ? (t.classId as any) === selectedClass : (t.classId as any)?._id === selectedClass;
+        } else {
+          return typeof (t.teacherId as any) === "string" ? (t.teacherId as any) === selectedTeacher : (t.teacherId as any)?._id === selectedTeacher;
+        }
+      })
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
   };
 
@@ -274,8 +348,8 @@ export default function TimetableManagement() {
       key: "teacherId",
       label: "Teacher",
       render: (value: unknown) => {
-        const teacher = value as any as Teacher | null;
-        return (teacher && (teacher.name || (teacher.firstName ? `${(teacher as any).firstName} ${(teacher as any).lastName || ''}` : ''))) || "-";
+        const teacher = value as any;
+        return (teacher && (teacher.name || (teacher.firstName ? `${teacher.firstName} ${teacher.lastName || ''}` : ''))) || "-";
       },
     },
     {
@@ -386,18 +460,50 @@ export default function TimetableManagement() {
             </div>
 
             {viewMode === "calendar" && (
-              <div>
-                <select
-                  value={selectedClass}
-                  onChange={(e) => setSelectedClass(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all appearance-none bg-white"
-                >
-                  {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>
-                      {cls.name} - Section {cls.section}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex items-center gap-3 border-l border-gray-200 pl-4">
+                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewBy("class")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      viewBy === "class" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Class View
+                  </button>
+                  <button
+                    onClick={() => setViewBy("teacher")}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      viewBy === "teacher" ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    Teacher View
+                  </button>
+                </div>
+                {viewBy === "class" ? (
+                  <select
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all appearance-none bg-white min-w-[200px]"
+                  >
+                    {classes.map((cls) => (
+                      <option key={cls._id} value={cls._id}>
+                        {cls.name} - Section {cls.section}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    value={selectedTeacher}
+                    onChange={(e) => setSelectedTeacher(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all appearance-none bg-white min-w-[200px]"
+                  >
+                    {teachers.map((teacher) => (
+                      <option key={teacher._id} value={teacher._id}>
+                        {teacher.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             )}
           </div>
@@ -406,10 +512,10 @@ export default function TimetableManagement() {
             onClick={() => {
               setEditingEntry(null);
               setFormData({
-                classId: "",
-                day: "Monday",
+                classId: viewBy === "class" && selectedClass ? selectedClass : "",
+                days: ["Monday"],
                 subject: "",
-                teacherId: "",
+                teacherId: viewBy === "teacher" && selectedTeacher ? selectedTeacher : "",
                 startTime: "09:00",
                 endTime: "09:45",
                 roomNumber: "",
@@ -424,10 +530,10 @@ export default function TimetableManagement() {
         </div>
 
         {/* Calendar View */}
-        {viewMode === "calendar" && selectedClass && (
+        {viewMode === "calendar" && (viewBy === "class" ? selectedClass : selectedTeacher) && (
           <div className="grid grid-cols-6 gap-2">
             {DAYS.map((day) => {
-              const entries = getEntriesForDayAndClass(day, selectedClass);
+              const entries = getEntriesForDayAndFilter(day);
               return (
                 <div key={day} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm min-w-0">
                   {/* Day Header */}
@@ -468,20 +574,27 @@ export default function TimetableManagement() {
                                   {entry.subject}
                                 </span>
                                 {/* Action buttons on hover */}
-                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                                <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded shadow-sm flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-gray-200 border border-gray-200">
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); handleEditEntry(entry); }}
-                                    className="w-5 h-5 rounded bg-blue-100 hover:bg-blue-200 text-blue-700 flex items-center justify-center transition-colors"
-                                    title="Edit"
+                                    onClick={() => handleDuplicateEntry(entry)}
+                                    className="p-1 text-gray-500 hover:text-green-600 hover:bg-green-50 transition-colors"
+                                    title="Duplicate Entry"
                                   >
-                                    <Edit2 className="w-2.5 h-2.5" />
+                                    <Plus className="w-3 h-3" />
                                   </button>
                                   <button
-                                    onClick={(e) => { e.stopPropagation(); handleDeleteEntry(entry._id); }}
-                                    className="w-5 h-5 rounded bg-red-100 hover:bg-red-200 text-red-700 flex items-center justify-center transition-colors"
-                                    title="Delete"
+                                    onClick={() => handleEditEntry(entry)}
+                                    className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                    title="Edit Entry"
                                   >
-                                    <Trash2 className="w-2.5 h-2.5" />
+                                    <Edit2 className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteEntry(entry._id)}
+                                    className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                    title="Delete Entry"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
                                   </button>
                                 </div>
                               </div>
@@ -492,10 +605,25 @@ export default function TimetableManagement() {
                                 <span>{entry.startTime}–{entry.endTime}</span>
                               </div>
 
-                              {/* Teacher */}
+                              {/* Teacher or Class */}
                               <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                                <GraduationCap className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
-                                <span className="truncate">{teacherName}</span>
+                                {viewBy === "class" ? (
+                                  <>
+                                    <GraduationCap className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
+                                    <span className="truncate">{teacherName}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <School className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {(() => {
+                                        const c = entry.classId as any;
+                                        if (!c || typeof c === "string") return "—";
+                                        return `${c.name} - ${c.section}`;
+                                      })()}
+                                    </span>
+                                  </>
+                                )}
                               </div>
 
                               {/* Room */}
@@ -606,32 +734,58 @@ export default function TimetableManagement() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Day *</label>
-            <div className="grid grid-cols-3 gap-2">
-              {DAYS.map((day) => (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, day }))}
-                  className={`px-3 py-2 rounded-lg border-2 transition-all text-sm font-medium ${formData.day === day
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-indigo-300"
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {editingEntry ? "Day *" : "Days (Select multiple) *"}
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {DAYS.map((day) => {
+                const isSelected = formData.days.includes(day);
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => {
+                      if (editingEntry) {
+                        setFormData((prev) => ({ ...prev, days: [day] }));
+                      } else {
+                        setFormData((prev) => {
+                          if (prev.days.includes(day)) {
+                            return { ...prev, days: prev.days.filter((d) => d !== day) };
+                          } else {
+                            return { ...prev, days: [...prev.days, day] };
+                          }
+                        });
+                      }
+                    }}
+                    className={`px-3 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                      isSelected
+                        ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                        : "border-gray-200 text-gray-600 hover:border-indigo-300 hover:bg-gray-50"
                     }`}
-                >
-                  {day.substring(0, 3)}
-                </button>
-              ))}
+                  >
+                    {day.substring(0, 3)}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          <Input
-            label="Subject *"
-            name="subject"
-            value={formData.subject}
-            onChange={handleInputChange}
-            placeholder="e.g., Mathematics, English"
-            fullWidth
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+            <select
+              name="subject"
+              value={formData.subject}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all appearance-none bg-white"
+            >
+              <option value="">Select a subject</option>
+              {globalSubjects.map((sub, idx) => (
+                <option key={idx} value={sub}>
+                  {sub}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Teacher *</label>

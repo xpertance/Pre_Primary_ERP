@@ -9,7 +9,7 @@ import {
   Users,
   GraduationCap,
   ClipboardCheck,
-  DollarSign,
+  IndianRupee,
   Calendar,
   FileText,
   Bell,
@@ -107,7 +107,7 @@ export default function Sidebar({
       name: "Fees",
       path: `${basePath}/fees`,
       module: "fees",
-      icon: DollarSign,
+      icon: IndianRupee,
       color: "green",
     },
     {

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ReactNode } from "react";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
@@ -25,6 +25,12 @@ import {
   Filter,
   X,
   School,
+  ChevronDown,
+  Calendar,
+  Clock,
+  Grid3x3,
+  List,
+  DoorOpen,
 } from "lucide-react";
 
 interface ClassAssignment {
@@ -58,6 +64,7 @@ interface Column {
 export default function TeacherManagement() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [globalSubjects, setGlobalSubjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -66,6 +73,15 @@ export default function TeacherManagement() {
   const [saving, setSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingTeacher, setDeletingTeacher] = useState<Teacher | null>(null);
+
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
+  const subjectDropdownRef = useRef<HTMLDivElement>(null);
+
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [selectedTeacherForSchedule, setSelectedTeacherForSchedule] = useState<Teacher | null>(null);
+  const [scheduleViewRange, setScheduleViewRange] = useState<"Today" | "Weekly">("Today");
+  const [teacherTimetables, setTeacherTimetables] = useState<any[]>([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
 
 
   const [formData, setFormData] = useState<{
@@ -89,7 +105,32 @@ export default function TeacherManagement() {
   useEffect(() => {
     fetchTeachers();
     fetchClasses();
+    fetchGlobalSubjects();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (subjectDropdownRef.current && !subjectDropdownRef.current.contains(event.target as Node)) {
+        setIsSubjectDropdownOpen(false);
+      }
+    };
+    if (isSubjectDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSubjectDropdownOpen]);
+
+  const fetchGlobalSubjects = async () => {
+    try {
+      const res = await fetch("/api/settings");
+      const data = await res.json();
+      if (data.settings && data.settings.subjects) {
+        setGlobalSubjects(data.settings.subjects);
+      }
+    } catch (error) {
+      console.error("Failed to fetch global subjects:", error);
+    }
+  };
 
   const fetchTeachers = async () => {
     try {
@@ -323,6 +364,24 @@ export default function TeacherManagement() {
     }
   };
 
+  const handleRowDoubleClick = async (row: Record<string, unknown>) => {
+    const teacher = row as Teacher;
+    setSelectedTeacherForSchedule(teacher);
+    setScheduleModalOpen(true);
+    setScheduleLoading(true);
+    setScheduleViewRange("Today");
+    try {
+      const res = await fetch(`/api/timetable?teacherId=${teacher._id}`);
+      const data = await res.json();
+      setTeacherTimetables(data.timetable || data.data || []);
+    } catch (error) {
+      console.error("Failed to fetch teacher schedule", error);
+      showToast.error("Failed to fetch teacher schedule");
+    } finally {
+      setScheduleLoading(false);
+    }
+  };
+
   const filteredTeachers = teachers.filter((teacher) => {
     const matchesSearch =
       (teacher.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -516,6 +575,7 @@ export default function TeacherManagement() {
             columns={columns}
             data={filteredTeachers}
             loading={loading}
+            onRowDoubleClick={handleRowDoubleClick}
             actions={(row) => (
               <div className="flex gap-2">
                 <button
@@ -620,31 +680,75 @@ export default function TeacherManagement() {
           {/* Subjects Section */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Subjects</label>
-            <div className="space-y-2">
-              {formData.subjects.map((subject, idx) => (
-                <div key={idx} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={subject}
-                    onChange={(e) => handleSubjectChange(idx, e.target.value)}
-                    placeholder="Enter subject name"
-                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
-                  />
-                  <button
-                    onClick={() => handleRemoveSubject(idx)}
-                    className="flex items-center gap-1.5 px-3 py-2.5 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={handleAddSubject}
-                className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-purple-400 hover:text-purple-600 transition-all w-full justify-center"
+            <div className="relative" ref={subjectDropdownRef}>
+              <div 
+                className="min-h-[46px] w-full px-3 py-2 bg-white border border-gray-300 rounded-lg flex flex-wrap gap-2 items-center cursor-pointer focus-within:ring-2 focus-within:ring-purple-400 focus-within:border-transparent transition-all"
+                onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
               >
-                <Plus className="w-4 h-4" />
-                Add Subject
-              </button>
+                {formData.subjects.length > 0 ? (
+                  formData.subjects.map((subject, idx) => (
+                    <span 
+                      key={idx} 
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-purple-50 text-purple-700 text-sm font-medium border border-purple-100"
+                    >
+                      {subject}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFormData(prev => ({ ...prev, subjects: prev.subjects.filter(s => s !== subject) }));
+                        }}
+                        className="hover:bg-purple-200 rounded-full p-0.5 transition-colors text-purple-500 hover:text-purple-700"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-400 text-sm px-1">Select subjects...</span>
+                )}
+                <div className="ml-auto pl-2 text-gray-400">
+                  <ChevronDown className={`w-4 h-4 transition-transform ${isSubjectDropdownOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+
+              {isSubjectDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto custom-scrollbar">
+                  {globalSubjects.length > 0 ? (
+                    <div className="p-1">
+                      {globalSubjects.map((gs, i) => {
+                        const isSelected = formData.subjects.includes(gs);
+                        return (
+                          <div
+                            key={i}
+                            onClick={() => {
+                              if (isSelected) {
+                                setFormData(prev => ({ ...prev, subjects: prev.subjects.filter(s => s !== gs) }));
+                              } else {
+                                setFormData(prev => ({ ...prev, subjects: [...prev.subjects, gs] }));
+                              }
+                            }}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors ${
+                              isSelected ? 'bg-purple-50 text-purple-700' : 'hover:bg-gray-50 text-gray-700'
+                            }`}
+                          >
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                              isSelected ? 'bg-purple-600 border-purple-600' : 'border-gray-300'
+                            }`}>
+                              {isSelected && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                            </div>
+                            <span className="text-sm font-medium">{gs}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-sm text-gray-500 text-center">
+                      No global subjects defined. Go to Settings to add subjects.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -766,6 +870,148 @@ export default function TeacherManagement() {
           </p>
         </div>
       </Modal>
+
+      {/* Teacher Schedule Modal */}
+      <Modal
+        isOpen={scheduleModalOpen}
+        onClose={() => setScheduleModalOpen(false)}
+        title={selectedTeacherForSchedule ? `${selectedTeacherForSchedule.name}'s Schedule` : "Teacher Schedule"}
+        size="xl"
+        footer={
+          <div className="flex gap-2 w-full justify-end">
+            <Button onClick={() => setScheduleModalOpen(false)} variant="secondary">
+              Close
+            </Button>
+            <a href={`/dashboard/timetable?view=teacher&teacherId=${selectedTeacherForSchedule?._id}`}>
+              <Button variant="primary">
+                Edit Schedule
+              </Button>
+            </a>
+          </div>
+        }
+      >
+        <div className="mt-4">
+          <div className="flex justify-center mb-6">
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setScheduleViewRange("Today")}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                  scheduleViewRange === "Today" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <List className="w-4 h-4" />
+                Today
+              </button>
+              <button
+                onClick={() => setScheduleViewRange("Weekly")}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-all flex items-center gap-2 ${
+                  scheduleViewRange === "Weekly" ? "bg-white text-purple-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Grid3x3 className="w-4 h-4" />
+                Weekly
+              </button>
+            </div>
+          </div>
+
+          {scheduleLoading ? (
+            <div className="py-12 flex flex-col items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-4"></div>
+              <p className="text-gray-500">Loading schedule...</p>
+            </div>
+          ) : (
+            <div className="min-h-[300px]">
+              {scheduleViewRange === "Today" ? (
+                <div>
+                  {(() => {
+                    const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                    const todaysClasses = teacherTimetables
+                      .filter(t => t.day === currentDay)
+                      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+                    if (todaysClasses.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-16 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
+                          <Calendar className="w-12 h-12 text-gray-300 mb-3" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-1">No Classes Today</h3>
+                          <p className="text-sm text-gray-500">This teacher has a free day today ({currentDay}).</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4 border-b pb-2">{currentDay}'s Classes</h3>
+                        <div className="space-y-3">
+                          {todaysClasses.map((entry, idx) => (
+                            <div key={idx} className="flex items-center gap-4 bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-purple-500" />
+                              <div className="flex-shrink-0 w-24 text-center">
+                                <div className="text-lg font-bold text-gray-900">{entry.startTime}</div>
+                                <div className="text-xs font-medium text-gray-500">{entry.endTime}</div>
+                              </div>
+                              <div className="w-px h-12 bg-gray-200 hidden sm:block" />
+                              <div className="flex-1">
+                                <h4 className="text-lg font-semibold text-gray-900 mb-1">{entry.subject}</h4>
+                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <div className="flex items-center gap-1.5">
+                                    <School className="w-4 h-4 text-gray-400" />
+                                    <span>{entry.classId?.name} - {entry.classId?.section}</span>
+                                  </div>
+                                  {entry.roomNumber && (
+                                    <div className="flex items-center gap-1.5">
+                                      <DoorOpen className="w-4 h-4 text-gray-400" />
+                                      <span>Rm {entry.roomNumber}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div>
+                  <div className="grid grid-cols-6 gap-2">
+                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map(day => {
+                      const dayClasses = teacherTimetables
+                        .filter(t => t.day === day)
+                        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+                      
+                      return (
+                        <div key={day} className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                          <div className="bg-purple-100 text-purple-800 text-xs font-bold text-center py-1.5 border-b border-purple-200">
+                            {day.substring(0, 3)}
+                          </div>
+                          <div className="p-1.5 space-y-1.5 min-h-[100px]">
+                            {dayClasses.length === 0 ? (
+                              <div className="text-[10px] text-gray-400 text-center py-4">Free</div>
+                            ) : (
+                              dayClasses.map((entry, idx) => (
+                                <div key={idx} className="bg-white border border-gray-200 rounded p-1.5 text-xs shadow-sm">
+                                  <div className="font-semibold text-gray-900 truncate" title={entry.subject}>{entry.subject}</div>
+                                  <div className="text-[10px] text-gray-500 font-medium my-0.5">{entry.startTime}-{entry.endTime}</div>
+                                  <div className="text-[10px] text-purple-600 font-semibold truncate bg-purple-50 rounded px-1 py-0.5 inline-block w-full">
+                                    {entry.classId?.name}-{entry.classId?.section}
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
+
     </div>
   );
 }

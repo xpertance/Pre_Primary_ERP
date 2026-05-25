@@ -9,6 +9,7 @@ const SettingsSchema = new mongoose.Schema(
     schoolEmail: String,
     principalName: String,
     academicYear: String, // e.g., "2024-2025"
+    subjects: { type: [String], default: [] },
     termDates: [
       {
         termName: String,

@@ -30,6 +30,29 @@ export async function PUT(
             return NextResponse.json({ success: false, error: "Teacher not found" }, { status: 404 });
         }
 
+        // Check for overlap
+        const overlap = await Timetable.findOne({
+            _id: { $ne: id },
+            teacherId: parsed.teacherId,
+            day: parsed.day,
+            startTime: { $lt: parsed.endTime },
+            endTime: { $gt: parsed.startTime }
+        });
+
+        if (overlap) {
+            if (user.role === "admin") {
+                await import("@/models/Notification").then((mod) => mod.default.create({
+                    recipientId: user.id,
+                    type: "system",
+                    title: "Schedule Conflict Prevented",
+                    message: `Attempted to double-book ${teacher.name} on ${parsed.day} at ${parsed.startTime}-${parsed.endTime}, but they are already booked for ${overlap.subject}.`,
+                    priority: "high",
+                    icon: "Calendar"
+                }));
+            }
+            return NextResponse.json({ success: false, error: "Teacher is already scheduled for another class during this time." }, { status: 400 });
+        }
+
         const updated = await Timetable.findByIdAndUpdate(id, parsed, { new: true });
 
         if (!updated) {
