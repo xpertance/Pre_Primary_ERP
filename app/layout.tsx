@@ -18,24 +18,26 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Xpertance | Pre-Primary ERP System",
+  title: "Innonsh TinySteps | School Management System",
   description:
-    "Xpertance Pre-Primary ERP System for managing admissions, students, teachers, attendance, fees, payroll, and academic operations efficiently.",
+    "Innonsh TinySteps System for managing admissions, students, teachers, attendance, fees, payroll, and academic operations efficiently.",
   keywords: [
-    "Xpertance",
-    "Pre-Primary ERP",
     "School ERP",
-    "Education Management System",
-    "Student Management",
-    "Teacher Management",
-    "Fees Management",
-    "Payroll System",
-    "Parent Portal",
-    "Student Tracking",
+    "Innonsh TinySteps",
+    "School Management System",
+    "Pre-primary software",
+    "Education Management",
+    "Student Information System",
   ],
-  authors: [{ name: "Xpertance" }],
-  creator: "Xpertance",
-  applicationName: "Xpertance Pre-Primary ERP",
+  authors: [{ name: "Innonsh TinySteps" }],
+  creator: "Innonsh TinySteps",
+  publisher: "Innonsh TinySteps",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  applicationName: "Innonsh TinySteps",
 };
 
 export default function RootLayout({

@@ -192,7 +192,7 @@ export default function LandingPage() {
     {
       name: "Priya Sharma",
       role: "Principal, Little Stars Academy",
-      content: "Pre-Primary ERP has transformed how we manage our school. The intuitive interface makes it easy for all staff members to use.",
+      content: "Innonsh TinySteps has transformed how we manage our school. The intuitive interface makes it easy for all staff members to use.",
       rating: 5
     },
     {
@@ -216,7 +216,7 @@ export default function LandingPage() {
       period: "per month",
       description: "Perfect for small preschools",
       features: [
-        "Up to 100 students",
+        "Up to 50 students",
         "Basic student management",
         "Attendance tracking",
         "Fee management",
@@ -231,7 +231,7 @@ export default function LandingPage() {
       period: "per month",
       description: "Most popular for growing schools",
       features: [
-        "Up to 500 students",
+        "Up to 100 students",
         "All Starter features",
         "Teacher management",
         "Advanced reporting",
@@ -268,11 +268,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl flex items-center justify-center shadow-md">
-                <GraduationCap className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src="/ICON.png" alt="Innonsh TinySteps" className="w-full h-full object-contain rounded-xl" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Pre-Primary ERP</h1>
+                <h1 className="text-xl font-bold text-gray-900">Innonsh TinySteps</h1>
                 <p className="text-xs text-gray-500">School Management</p>
               </div>
             </div>
@@ -391,7 +391,7 @@ export default function LandingPage() {
               <div className="relative rounded-2xl bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-slate-100 overflow-hidden">
                 <Image
                   src="/dashboard.png"
-                  alt="Pre-Primary ERP Dashboard"
+                  alt="Innonsh TinySteps Dashboard"
                   width={900}
                   height={620}
                   className="w-full h-auto block"
@@ -470,7 +470,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-4xl font-bold text-gray-900 mb-6">
-                Why Schools Choose Pre-Primary ERP
+                Why Schools Choose Innonsh TinySteps
               </h2>
               <p className="text-xl text-gray-600 mb-8">
                 Join hundreds of schools that have transformed their operations with our intelligent management system
@@ -519,7 +519,7 @@ export default function LandingPage() {
               Loved by School Administrators
             </h2>
             <p className="text-lg text-gray-500 max-w-xl mx-auto">
-              See what our customers have to say about Pre-Primary ERP
+              See what our customers have to say about Innonsh TinySteps
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -607,7 +607,7 @@ export default function LandingPage() {
             Ready to Transform Your School Management?
           </h2>
           <p className="text-xl text-white/90 mb-8">
-            Join hundreds of schools using Pre-Primary ERP to streamline their operations
+            Join hundreds of schools using Innonsh TinySteps to streamline their operations
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="#contact" className="px-8 py-4 bg-white text-gray-900 rounded-lg hover:bg-gray-100 transition-colors text-lg font-medium inline-block text-center whitespace-nowrap">
@@ -631,7 +631,7 @@ export default function LandingPage() {
               <form className="space-y-6" onSubmit={handleContactSubmit}>
                 {/* Prevent Captcha from FormSubmit when using AJAX */}
                 <input type="hidden" name="_captcha" value="false" />
-                <input type="hidden" name="_subject" value="New Inquiry from Pre-Primary ERP Website!" />
+                <input type="hidden" name="_subject" value="New Inquiry from Innonsh TinySteps Website!" />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -719,11 +719,11 @@ export default function LandingPage() {
             {/* Brand */}
             <div className="lg:col-span-1">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-orange-400 rounded-xl flex items-center justify-center shadow-md">
-                  <GraduationCap className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 flex items-center justify-center">
+                  <img src="/ICON.png" alt="Innonsh TinySteps" className="w-full h-full object-contain rounded-xl" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Pre-Primary ERP</h3>
+                  <h3 className="text-xl font-bold text-white" style={{ color: "#ffffff", opacity: 1, visibility: "visible" }}>Innonsh TinySteps</h3>
                 </div>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
@@ -765,7 +765,7 @@ export default function LandingPage() {
           {/* Bottom Footer: Legal & Social */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-slate-800">
             <div className="flex flex-col md:flex-row items-center gap-6 text-sm text-slate-500">
-              <span>© {new Date().getFullYear()} Pre-Primary ERP. All rights reserved.</span>
+              <span>© {new Date().getFullYear()} Innonsh TinySteps. All rights reserved.</span>
               <div className="hidden md:block w-1 h-1 bg-slate-700 rounded-full" />
               <div className="flex gap-4">
                 <a href="#" className="hover:text-white transition-colors">Privacy</a>
@@ -803,7 +803,7 @@ export default function LandingPage() {
                 {/* Prevent Captcha from FormSubmit when using AJAX */}
                 <input type="hidden" name="_captcha" value="false" />
                 <input type="hidden" name="_template" value="table" />
-                <input type="hidden" name="_subject" value="New Career Application: Pre-Primary ERP" />
+                <input type="hidden" name="_subject" value="New Career Application: Innonsh TinySteps" />
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Full Name</label>

@@ -202,7 +202,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Welcome to Pre-Primary ERP System</p>
+            <p className="text-gray-600 mt-1">Welcome to Innonsh TinySteps</p>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-400 to-orange-500 text-white rounded-lg">
             <Clock className="w-4 h-4" />
