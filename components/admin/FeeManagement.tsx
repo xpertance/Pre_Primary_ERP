@@ -435,7 +435,7 @@ export default function FeeStructureManagement() {
           </>
         }
       >
-        <div className="space-y-5 mt-4 max-h-[60vh] overflow-y-auto pr-2">
+        <div className="overflow-y-auto max-h-[400px]">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-lg flex items-center justify-center">
               {editingStructure ? (

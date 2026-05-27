@@ -36,21 +36,22 @@ export default function Table({
 }: TableProps) {
   return (
     <div className="overflow-x-auto border border-gray-200 rounded-lg">
-      <table className="w-full">
-        <thead className="bg-gray-50 border-b border-gray-200">
+      <div className="overflow-y-auto max-h-[400px]">
+        <table className="w-full">
+        <thead className="sticky top-0 bg-gray-50 border-b border-gray-200 z-10">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 style={{ width: col.width }}
-                className={`text-left font-semibold text-gray-700 ${compact ? "px-3 py-2 text-sm" : "px-6 py-3 text-sm"}`}
+                className={`text-left font-semibold text-gray-700 whitespace-nowrap ${compact ? "px-3 py-2 text-sm" : "px-6 py-3 text-sm"}`}
               >
                 {col.label}
               </th>
             ))}
             {actions && (
               <th
-                className={`text-left font-semibold text-gray-700 ${compact ? "px-3 py-2 text-sm" : "px-6 py-3 text-sm"}`}
+                className={`text-left font-semibold text-gray-700 whitespace-nowrap ${compact ? "px-3 py-2 text-sm" : "px-6 py-3 text-sm"}`}
               >
                 Actions
               </th>
@@ -107,6 +108,7 @@ export default function Table({
           )}
         </tbody>
       </table>
+        </div>
     </div>
   );
 }

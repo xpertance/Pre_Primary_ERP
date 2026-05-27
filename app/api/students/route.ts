@@ -119,8 +119,12 @@ export async function POST(req: Request) {
       hashedPassword = await bcryptjs.hash(parsed.password, 10);
     }
 
+    // Generate a new admission number (backend‑only)
+    const admissionNo = await import("@/lib/admissionNumber").then(m => m.generateAdmissionNo());
+
     const created = await Student.create({
       ...parsed,
+      admissionNo,
       password: hashedPassword,
       dob: parsed.dob ? new Date(parsed.dob) : undefined,
       admissionDate: parsed.admissionDate ? new Date(parsed.admissionDate) : undefined,
