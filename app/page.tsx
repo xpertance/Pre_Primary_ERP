@@ -182,9 +182,9 @@ export default function LandingPage() {
   ];
 
   const stats = [
-    { number: "500+", label: "Schools Trust Us" },
-    { number: "50K+", label: "Students Managed" },
-    { number: "99.9%", label: "Uptime Guarantee" },
+    { number: "50+", label: "Schools Trust Us" },
+    { number: "20K", label: "Students Managed" },
+    { number: "80%", label: "Uptime Guarantee" },
     { number: "24/7", label: "Support Available" }
   ];
 
@@ -404,7 +404,7 @@ export default function LandingPage() {
                 className="absolute -top-5 -right-5 bg-secondary rounded-2xl px-6 py-5 shadow-2xl flex flex-col items-center justify-center animate-bounce cursor-default z-10"
                 style={{ animationDuration: '4s', minWidth: '110px' }}
               >
-                <span className="text-2xl font-black text-white leading-none">50K+</span>
+                <span className="text-2xl font-black text-white leading-none">20K</span>
                 <span className="text-xs font-bold text-white/90 mt-1">Students</span>
               </div>
 
@@ -413,7 +413,7 @@ export default function LandingPage() {
                 className="absolute -bottom-5 left-8 bg-primary rounded-2xl px-7 py-5 shadow-2xl flex flex-col items-center justify-center animate-bounce cursor-default z-10"
                 style={{ animationDuration: '5s', minWidth: '120px' }}
               >
-                <span className="text-2xl font-black text-white leading-none">99.9%</span>
+                <span className="text-2xl font-black text-white leading-none">80%</span>
                 <span className="text-xs font-bold text-white/90 mt-1">Uptime</span>
               </div>
             </div>

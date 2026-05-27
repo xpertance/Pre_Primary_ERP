@@ -14,7 +14,8 @@ export const PERMISSIONS: any = {
     "meal-plan",
     "gallery",
     "settings",
-    "log-activity"
+    "log-activity",
+    "leaves"
   ],
 
   teacher: [
@@ -23,7 +24,8 @@ export const PERMISSIONS: any = {
     "timetable",
     "exams",
     "notifications",
-    "events"
+    "events",
+    "leaves"
   ],
 
   parent: [

@@ -41,6 +41,7 @@ const NOTIFICATION_TYPES = [
   { value: "transport", label: "Transport" },
   { value: "meal", label: "Meal" },
   { value: "system", label: "System" },
+  { value: "leave", label: "Leave" },
 ];
 
 const PRIORITY_OPTIONS = [

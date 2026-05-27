@@ -129,7 +129,7 @@ export default function EventManagement() {
     targetAudience: "all",
     classIds: [],
     attachments: [],
-    status: "draft",
+    status: "published",
     notify: true,
     notificationType: "all",
   });
@@ -142,7 +142,7 @@ export default function EventManagement() {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/events?status=${statusFilter}`);
+      const res = await fetch(`/api/events?status=${statusFilter}&limit=500&_t=${Date.now()}`);
       const data = await res.json();
       setEvents(data.events || []);
     } catch (error) {
@@ -251,7 +251,7 @@ export default function EventManagement() {
       targetAudience: "all",
       classIds: [],
       attachments: [],
-      status: "draft",
+      status: "published",
       notify: true,
       notificationType: "all",
     });
