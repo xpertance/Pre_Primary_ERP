@@ -49,7 +49,7 @@ const studentSchema = new mongoose.Schema<IStudentDoc>(
   {
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, trim: true },
-    email: { type: String, unique: true, sparse: true },
+    email: { type: String, sparse: true },
     password: String, // hashed password
     dob: Date,
     gender: { type: String, enum: ["male", "female", "other"] },

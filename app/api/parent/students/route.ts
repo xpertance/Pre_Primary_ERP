@@ -40,6 +40,7 @@ export async function GET(req: Request) {
 
   if (userEmail) {
     authQuery.$or.push({ "parents.email": userEmail });
+    authQuery.$or.push({ email: userEmail });
   }
 
   const students = await Student.find(authQuery)

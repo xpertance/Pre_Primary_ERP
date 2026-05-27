@@ -73,6 +73,7 @@ interface Column {
   key: string;
   label: string;
   render?: (value: unknown, row: Record<string, unknown>) => ReactNode;
+  width?: string;
 }
 
 export default function StudentManagement() {
@@ -264,6 +265,19 @@ export default function StudentManagement() {
       return;
     }
 
+    if (!formData.lastName) {
+      showToast.error("Last name is required");
+      return;
+    }
+
+    if (!formData.dob) {
+      showToast.error("Date of birth is required");
+      return;
+    }
+    if (!formData.classId) {
+      showToast.error("Class is required");
+      return;
+    }
     if (!editingStudent && !formData.email) {
       showToast.error("Parent login email is required");
       return;
@@ -280,9 +294,29 @@ export default function StudentManagement() {
       return;
     }
 
-    // Validation: Parent names must not be empty
+    // Validation: Parent/Guardian entries
+    if (!formData.parents || formData.parents.length === 0) {
+      showToast.error("At least one parent/guardian is required");
+      return;
+    }
+    // Name required
     if (formData.parents.some((p) => !p.name.trim())) {
       showToast.error("Parent Name is required");
+      return;
+    }
+    // Email required and basic format check
+    const emailRegex = /[^@\s]+@[^@\s]+\.[^@\s]+/;
+    if (formData.parents.some((p) => !p.email.trim())) {
+      showToast.error("Parent Email is required");
+      return;
+    }
+    if (formData.parents.some((p) => !emailRegex.test(p.email))) {
+      showToast.error("Parent Email must be a valid email address");
+      return;
+    }
+    // Phone must be exactly 10 digits
+    if (formData.parents.some((p) => !/^\d{10}$/.test(p.phone))) {
+      showToast.error("Parent Phone must be exactly 10 digits");
       return;
     }
 
@@ -434,35 +468,58 @@ export default function StudentManagement() {
     {
       key: "admissionNo",
       label: "Admission No.",
-      render: (value: unknown) => String(value) || "-",
+      width: "18%",
+      render: (value: unknown) => (
+        <div className="whitespace-nowrap">
+          {value ? (
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 shadow-sm">
+              {String(value)}
+            </span>
+          ) : (
+            <span className="text-gray-400">-</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "firstName",
       label: "First Name",
-      render: (value: unknown) => String(value),
+      width: "20%",
+      render: (value: unknown) => <div className="whitespace-nowrap font-medium text-gray-900">{String(value)}</div>,
     },
     {
       key: "lastName",
       label: "Last Name",
-      render: (value: unknown) => String(value) || "-",
+      width: "17%",
+      render: (value: unknown) => <div className="whitespace-nowrap text-gray-600">{String(value) || "-"}</div>,
+    },
+    {
+      key: "admissionDate",
+      label: "Admission Date",
+      width: "15%",
+      render: (value: unknown) => <div className="whitespace-nowrap text-gray-500">{value ? new Date(String(value)).toLocaleDateString() : "-"}</div>,
     },
     {
       key: "gender",
       label: "Gender",
+      width: "15%",
       render: (value: unknown) => (
-        <Badge
-          variant={
-            String(value) === "male" ? "info" : String(value) === "female" ? "danger" : "warning"
-          }
-        >
-          {String(value) || "N/A"}
-        </Badge>
+        <div className="whitespace-nowrap">
+          <Badge
+            variant={
+              String(value) === "male" ? "info" : String(value) === "female" ? "danger" : "warning"
+            }
+          >
+            {String(value) || "N/A"}
+          </Badge>
+        </div>
       ),
     },
     {
       key: "section",
       label: "Section",
-      render: (value: unknown) => String(value) || "-",
+      width: "15%",
+      render: (value: unknown) => <div className="whitespace-nowrap text-gray-600">{String(value) || "-"}</div>,
     },
   ];
 
@@ -712,8 +769,12 @@ export default function StudentManagement() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+               {editingStudent && (
+                 <div className="mt-2">
+                   <strong>Admission No:</strong>{' '}
+                   <span className="text-sm text-gray-600">{editingStudent.admissionNo || '-'}</span>
+                 </div>
+                )}
                   <Input
                     label="Parent Login Email *"
                     name="email"
@@ -741,11 +802,11 @@ export default function StudentManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="Admission Number"
-                  name="admissionNo"
-                  value={formData.admissionNo}
+                  label="Date of Birth *"
+                  name="dob"
+                  type="date"
+                  value={formData.dob}
                   onChange={handleInputChange}
-                  placeholder="e.g., STD001"
                   fullWidth
                 />
                 <Input
@@ -758,17 +819,8 @@ export default function StudentManagement() {
                 />
               </div>
 
-              <Input
-                label="Date of Birth"
-                name="dob"
-                type="date"
-                value={formData.dob}
-                onChange={handleInputChange}
-                fullWidth
-              />
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Gender *</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     { value: "male", label: "Male", emoji: "👦" },
@@ -792,7 +844,7 @@ export default function StudentManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Class *</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Class *</label>
                 <select
                   name="classId"
                   value={formData.classId}
@@ -902,11 +954,11 @@ export default function StudentManagement() {
                             <div>
                               <label className="block text-xs text-gray-500 mb-1">Due Date</label>
                               <input
-                                type="date"
+          
                                 value={feeDueDate}
                                 onChange={(e) => setFeeDueDate(e.target.value)}
                                 className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-emerald-400"
-                              />
+                               />
                             </div>
                           </div>
                         </>
@@ -915,14 +967,12 @@ export default function StudentManagement() {
                   )}
                 </div>
               )}
-            </div>
-          </div>
-
+              
           {/* Parent/Guardian Information */}
           <div className="border-t pt-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Parent/Guardian Information
+              Parent/Guardian Information *
             </h3>
             <div className="space-y-3">
               {formData?.parents?.map((parent, index) => (
