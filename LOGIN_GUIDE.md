@@ -2,7 +2,7 @@
 
 ## System Overview
 
-The Pre-Primary ERP system supports **4 user roles** with different dashboards and permissions:
+The Innonsh TinySteps system supports **4 user roles** with different dashboards and permissions:
 
 1. **Admin** → `/dashboard`
 2. **Teacher** → `/teacher-dashboard`

@@ -136,11 +136,11 @@ export default function LoginPage() {
           {/* Logo and Heading */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-accent via-primary to-primary-dark rounded-xl flex items-center justify-center">
-                <Baby className="w-7 h-7 text-white" />
+              <div className="w-12 h-12 flex items-center justify-center">
+                <img src="/ICON.png" alt="Innonsh TinySteps" className="w-full h-full object-contain rounded-xl" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">Pre-Primary <span className="text-primary">ERP</span></h1>
+                <h1 className="text-2xl font-bold text-gray-800">Innonsh <span className="text-primary">TinySteps</span></h1>
               </div>
             </div>
 

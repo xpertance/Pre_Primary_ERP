@@ -340,7 +340,7 @@ export default function StudentFeeDetails({ studentId }: { studentId: string }) 
         doc.setFontSize(18);
         doc.setTextColor(255, 255, 255);
         doc.setFont("helvetica", "bold");
-        doc.text("Pre-Primary ERP", margin, 14);
+        doc.text("Innonsh TinySteps", margin, 14);
 
         // Receipt label on the right
         doc.setFontSize(9);
