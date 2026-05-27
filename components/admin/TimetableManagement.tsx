@@ -70,6 +70,8 @@ export default function TimetableManagement() {
   const queryTeacherId = searchParams?.get("teacherId");
 
   const [timetables, setTimetables] = useState<Timetable[]>([]);
+  const [activeLeaves, setActiveLeaves] = useState<any[]>([]);
+  const [activeSubstitutes, setActiveSubstitutes] = useState<any[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [globalSubjects, setGlobalSubjects] = useState<string[]>([]);
@@ -118,6 +120,8 @@ export default function TimetableManagement() {
       console.log("[TimetableManagement] Fetched timetables:", data);
       if (data.success || data.timetable) {
         setTimetables(data.timetable || data.data || []);
+        if (data.activeLeaves) setActiveLeaves(data.activeLeaves);
+        if (data.activeSubstitutes) setActiveSubstitutes(data.activeSubstitutes);
       } else {
         console.error("[TimetableManagement] API error:", data.error);
         showToast.error(data.error || "Failed to fetch timetables");
@@ -606,24 +610,64 @@ export default function TimetableManagement() {
                               </div>
 
                               {/* Teacher or Class */}
-                              <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                                {viewBy === "class" ? (
-                                  <>
-                                    <GraduationCap className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
-                                    <span className="truncate">{teacherName}</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <School className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
-                                    <span className="truncate">
-                                      {(() => {
-                                        const c = entry.classId as any;
-                                        if (!c || typeof c === "string") return "—";
-                                        return `${c.name} - ${c.section}`;
-                                      })()}
-                                    </span>
-                                  </>
-                                )}
+                              <div className="flex flex-col gap-1 text-[10px] text-gray-500 mt-0.5">
+                                <div className="flex items-center gap-1">
+                                  {viewBy === "class" ? (
+                                    <>
+                                      <GraduationCap className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
+                                      <span className="truncate">{teacherName}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <School className="w-2.5 h-2.5 text-gray-400 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {(() => {
+                                          const c = entry.classId as any;
+                                          if (!c || typeof c === "string") return "—";
+                                          return `${c.name} - ${c.section}`;
+                                        })()}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                                {(() => {
+                                  const tId = typeof entry.teacherId === "string" ? entry.teacherId : (entry.teacherId as any)?._id;
+                                  
+                                  const isDateInLeave = (dayName: string, leave: any) => {
+                                    const daysMap: Record<string, number> = { "Sunday": 0, "Monday": 1, "Tuesday": 2, "Wednesday": 3, "Thursday": 4, "Friday": 5, "Saturday": 6 };
+                                    const now = new Date();
+                                    const currentDay = now.getDay();
+                                    const targetDay = daysMap[dayName];
+                                    if (targetDay === undefined) return false;
+                                    const diff = targetDay - currentDay;
+                                    const targetDate = new Date(now);
+                                    targetDate.setDate(now.getDate() + diff);
+                                    targetDate.setHours(0, 0, 0, 0);
+                                    
+                                    const start = new Date(leave.startDate);
+                                    start.setHours(0, 0, 0, 0);
+                                    const end = new Date(leave.endDate);
+                                    end.setHours(23, 59, 59, 999);
+                                    return targetDate >= start && targetDate <= end;
+                                  };
+
+                                  const isOnLeave = activeLeaves.some(l => l.teacherId === tId && isDateInLeave(entry.day, l));
+                                  const substitute = activeSubstitutes.find(s => s.originalTeacherId === tId && s.subject === entry.subject);
+                                  
+                                  if (isOnLeave) {
+                                    return (
+                                      <div className="flex flex-col gap-1 mt-0.5">
+                                        <span className="text-[9px] font-bold text-orange-600 bg-orange-100 px-1 py-0.5 rounded w-fit uppercase tracking-wider">On Leave</span>
+                                        {substitute && (
+                                          <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                                            <Users className="w-2.5 h-2.5" /> Sub: {substitute.substituteTeacherId?.name || "Assigned"}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
 
                               {/* Room */}

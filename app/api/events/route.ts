@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     const url = new URL(req.url);
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
-    const limit = Math.max(1, Math.min(100, parseInt(url.searchParams.get("limit") || "10")));
+    const limit = Math.max(1, Math.min(500, parseInt(url.searchParams.get("limit") || "10")));
     const status = url.searchParams.get("status") || "published";
 
     const filter: Record<string, unknown> = { status };

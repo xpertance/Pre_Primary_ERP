@@ -124,6 +124,13 @@ export default function Sidebar({
       icon: FileText,
       color: "indigo",
     },
+    {
+      name: "Leaves",
+      path: `${basePath}/leaves`,
+      module: "leaves",
+      icon: Clock,
+      color: "red",
+    },
     /* Previously Notifications. Kept as comment so original implementation remains available */
     /*
     {

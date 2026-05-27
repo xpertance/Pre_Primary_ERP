@@ -28,7 +28,25 @@ export async function GET(req: Request) {
     .populate("teacherId")
     .lean();
 
-  return NextResponse.json({ success: true, timetable });
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Fetch active leaves and substitutes to show in the timetable UI
+  const activeLeaves = await import("@/models/TeacherLeave").then(mod =>
+    mod.default.find({
+      status: "approved",
+      endDate: { $gte: today }
+    }).lean()
+  );
+
+  const activeSubstitutes = await import("@/models/SubstituteAssignment").then(mod =>
+    mod.default.find({
+      status: "assigned",
+      date: { $gte: today }
+    }).populate("substituteTeacherId", "name").lean()
+  );
+
+  return NextResponse.json({ success: true, timetable, activeLeaves, activeSubstitutes });
 }
 
 export async function POST(req: Request) {

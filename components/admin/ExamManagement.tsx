@@ -83,6 +83,7 @@ const EXAM_TYPES = [
 export default function ExamManagement() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [globalSubjects, setGlobalSubjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -122,7 +123,20 @@ export default function ExamManagement() {
   useEffect(() => {
     fetchExams();
     fetchClasses();
+    fetchGlobalSubjects();
   }, []);
+
+  const fetchGlobalSubjects = async () => {
+    try {
+      const res = await fetch("/api/settings");
+      const data = await res.json();
+      if (data.settings && data.settings.subjects) {
+        setGlobalSubjects(data.settings.subjects);
+      }
+    } catch (e) {
+      console.error("Failed to fetch global subjects:", e);
+    }
+  };
 
   const fetchExams = async () => {
     try {
@@ -217,7 +231,9 @@ export default function ExamManagement() {
       const method = editingExam ? "PUT" : "POST";
       const url = "/api/exams";
 
-      const payload = editingExam ? { id: editingExam._id, ...formData } : formData;
+      const computedSubjects = Array.from(new Set(formData.schedule.map(s => s.subject.trim()).filter(Boolean)));
+      const payloadData = { ...formData, subjects: computedSubjects };
+      const payload = editingExam ? { id: editingExam._id, ...payloadData } : payloadData;
 
       const res = await fetch(url, {
         method,
@@ -672,66 +688,7 @@ export default function ExamManagement() {
             </div>
           </div>
 
-          {/* ── Subjects ── */}
-          <div className="p-5 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              Subjects
-            </h3>
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  id="subjectInput"
-                  type="text"
-                  placeholder="Type subject name..."
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddSubject((e.target as HTMLInputElement).value);
-                      (e.target as HTMLInputElement).value = "";
-                    }
-                  }}
-                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.getElementById("subjectInput") as HTMLInputElement;
-                    if (input) {
-                      handleAddSubject(input.value);
-                      input.value = "";
-                      input.focus();
-                    }
-                  }}
-                  className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </button>
-              </div>
-              {formData.subjects.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {formData.subjects.map((subject, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-sm font-medium"
-                    >
-                      {subject}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSubject(index)}
-                        className="hover:bg-blue-200 rounded-full p-0.5 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-400 italic">No subjects added yet.</p>
-              )}
-            </div>
-          </div>
+          {/* ── Subjects (Auto-extracted from schedule) ── */}
 
           {/* ── Exam Schedule ── */}
           <div className="p-5 border-b border-gray-100">
@@ -755,13 +712,18 @@ export default function ExamManagement() {
                   <div className="grid grid-cols-2 gap-3 mb-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
-                      <input
-                        type="text"
-                        placeholder="e.g., Mathematics"
+                      <select
                         value={item.subject}
                         onChange={(e) => handleScheduleChange(idx, "subject", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                      />
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm appearance-none bg-white"
+                      >
+                        <option value="">Select a subject</option>
+                        {globalSubjects.map((sub, sIdx) => (
+                          <option key={sIdx} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>

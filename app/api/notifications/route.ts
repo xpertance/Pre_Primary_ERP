@@ -17,10 +17,19 @@ export async function GET(req: Request) {
     const limit = Math.max(1, Math.min(100, parseInt(url.searchParams.get("limit") || "20")));
     const unreadOnly = url.searchParams.get("unread") === "true";
 
-    const filter: Record<string, unknown> = { recipientId: user.id };
+    const filter: Record<string, unknown> = {};
+    if (user.role !== "admin") {
+      filter.recipientId = user.id;
+    }
+    
     if (unreadOnly) filter.isRead = false;
 
     const skip = (page - 1) * limit;
+
+    const unreadFilter: Record<string, unknown> = { isRead: false };
+    if (user.role !== "admin") {
+      unreadFilter.recipientId = user.id;
+    }
 
     const [notifications, total, unreadCount] = await Promise.all([
       Notification.find(filter)
@@ -30,7 +39,7 @@ export async function GET(req: Request) {
         .limit(limit)
         .lean(),
       Notification.countDocuments(filter),
-      Notification.countDocuments({ recipientId: user.id, isRead: false }),
+      Notification.countDocuments(unreadFilter),
     ]);
 
     return NextResponse.json({

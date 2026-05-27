@@ -25,6 +25,11 @@ const SettingsSchema = new mongoose.Schema(
         type: { type: String, enum: ["national", "optional", "school"], default: "national" },
       }
     ],
+    leaveQuotas: {
+      sick: { type: Number, default: 10 },
+      casual: { type: Number, default: 5 },
+      emergency: { type: Number, default: 3 },
+    },
     featureFlags: {
       enableTransport: { type: Boolean, default: true },
       enableMealPlan: { type: Boolean, default: true },
